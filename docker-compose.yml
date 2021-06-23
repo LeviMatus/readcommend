@@ -1,0 +1,15 @@
+# Starts PostgreSQL database and front-end app for development, assuming the back-end service will be built and run separately by developer
+version: "3"
+services:
+  app:
+    build: app
+    ports:
+      - "8080:8080"
+
+  postgresql:
+    image: "bitnami/postgresql:latest"
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRESQL_PASSWORD=password123
+      - POSTGRESQL_DATABASE=readcommend
