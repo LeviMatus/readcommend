@@ -1,6 +1,7 @@
 package author
 
 import (
+	"context"
 	"database/sql"
 	"fmt"
 
@@ -26,8 +27,8 @@ func NewPostgresRepository(db *sql.DB) (*authorPostgresRepo, error) {
 
 // GetAuthors selects all Authors in the repository. If the query fails or encounters an erro while
 // cursing through the result set, then an error is returned.
-func (r *authorPostgresRepo) GetAuthors() ([]Author, error) {
-	rows, err := r.db.Query(`SELECT * FROM author`)
+func (r *authorPostgresRepo) GetAuthors(ctx context.Context) ([]Author, error) {
+	rows, err := r.db.QueryContext(ctx, "SELECT * FROM author")
 	if err != nil {
 		return nil, fmt.Errorf("unable to get authors: %w", err)
 	}
@@ -36,9 +37,10 @@ func (r *authorPostgresRepo) GetAuthors() ([]Author, error) {
 	var authors []Author
 	for rows.Next() {
 		var author Author
-		if err = rows.Scan(&author.ID, &author.FirstName, &author.LastName); err == nil {
-			authors = append(authors, author)
+		if err = rows.Scan(&author.ID, &author.FirstName, &author.LastName); err != nil {
+			return nil, fmt.Errorf("unable to scan data into author: %w", err)
 		}
+		authors = append(authors, author)
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err

@@ -1,5 +1,9 @@
 package author
 
+import (
+	"context"
+)
+
 // Author represents a literary writer in a table/collection/node.
 // This is a repository layer DTO.
 type Author struct {
@@ -12,7 +16,7 @@ type Author struct {
 // Repository defines the method set required for all Author data-sources.
 type Repository interface {
 	// GetAuthors returns all Author entities in the DB resource.
-	GetAuthors() ([]Author, error)
+	GetAuthors(context.Context) ([]Author, error)
 
 	// Close should kill the DB connection.
 	Close() error
