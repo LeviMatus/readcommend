@@ -7,6 +7,7 @@ import (
 // Author represents a literary writer in a table/collection/node.
 // This is a repository layer DTO.
 type Author struct {
+	_ struct{}
 	// ID is the Author's primary key.
 	ID        int
 	FirstName string
