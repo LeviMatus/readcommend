@@ -25,7 +25,7 @@ func NewPostgresRepository(db *sql.DB) (*authorPostgresRepo, error) {
 	return &authorPostgresRepo{db: db}, nil
 }
 
-// GetAuthors selects all Authors in the repository. If the query fails or encounters an erro while
+// GetAuthors selects all Authors in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
 func (r *authorPostgresRepo) GetAuthors(ctx context.Context) ([]Author, error) {
 	rows, err := r.db.QueryContext(ctx, "SELECT * FROM author")
