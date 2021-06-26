@@ -55,17 +55,11 @@ func TestAuthorPostgresRepo_GetAuthors(t *testing.T) {
 	var query = "SELECT * FROM author"
 
 	tests := map[string]struct {
-		input                Author
 		expect               []Author
 		setQueryExpectations func(*sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery
 		errAssertion         assert.ErrorAssertionFunc
 	}{
 		"query returns error": {
-			input: Author{
-				ID:        42,
-				FirstName: "john",
-				LastName:  "doe",
-			},
 			expect:       nil,
 			errAssertion: assert.Error,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
@@ -73,11 +67,6 @@ func TestAuthorPostgresRepo_GetAuthors(t *testing.T) {
 			},
 		},
 		"error while scanning result-set": {
-			input: Author{
-				ID:        42,
-				FirstName: "john",
-				LastName:  "doe",
-			},
 			expect:       nil,
 			errAssertion: assert.Error,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
@@ -88,11 +77,6 @@ func TestAuthorPostgresRepo_GetAuthors(t *testing.T) {
 		},
 
 		"successful get authors": {
-			input: Author{
-				ID:        42,
-				FirstName: "john",
-				LastName:  "doe",
-			},
 			expect: []Author{{
 				ID:        42,
 				FirstName: "john",

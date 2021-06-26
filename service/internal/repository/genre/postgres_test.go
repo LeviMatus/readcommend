@@ -55,16 +55,11 @@ func TestGenrePostgresRepo_GetGenres(t *testing.T) {
 	var query = "SELECT * FROM genre"
 
 	tests := map[string]struct {
-		input                Genre
 		expect               []Genre
 		setQueryExpectations func(*sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery
 		errAssertion         assert.ErrorAssertionFunc
 	}{
 		"query returns error": {
-			input: Genre{
-				ID:    42,
-				Title: "SciFi/Fantasy",
-			},
 			expect:       nil,
 			errAssertion: assert.Error,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
@@ -72,10 +67,6 @@ func TestGenrePostgresRepo_GetGenres(t *testing.T) {
 			},
 		},
 		"error while scanning result-set": {
-			input: Genre{
-				ID:    42,
-				Title: "SciFi/Fantasy",
-			},
 			expect:       nil,
 			errAssertion: assert.Error,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
@@ -86,10 +77,6 @@ func TestGenrePostgresRepo_GetGenres(t *testing.T) {
 		},
 
 		"successful get genres": {
-			input: Genre{
-				ID:    42,
-				Title: "SciFi/Fantasy",
-			},
 			expect: []Genre{{
 				ID:    42,
 				Title: "SciFi/Fantasy",

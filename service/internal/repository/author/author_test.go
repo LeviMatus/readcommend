@@ -6,12 +6,6 @@ import (
 	"testing"
 )
 
-var mockAuthor = Author{
-	ID:        42,
-	FirstName: "john",
-	LastName:  "doe",
-}
-
 func TestMain(m *testing.M) {
 	exitCode := m.Run()
 
