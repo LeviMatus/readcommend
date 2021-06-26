@@ -50,7 +50,7 @@ func TestNewPostgresRepository(t *testing.T) {
 
 }
 
-func TestAuthorPostgresRepo_GetAuthors(t *testing.T) {
+func TestGenrePostgresRepo_GetGenres(t *testing.T) {
 
 	var query = "SELECT * FROM genre"
 
@@ -85,7 +85,7 @@ func TestAuthorPostgresRepo_GetAuthors(t *testing.T) {
 			},
 		},
 
-		"successful get authors": {
+		"successful get genres": {
 			input: Genre{
 				ID:    42,
 				Title: "SciFi/Fantasy",
