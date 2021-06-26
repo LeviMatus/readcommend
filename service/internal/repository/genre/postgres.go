@@ -12,7 +12,7 @@ type genrePostgresRepo struct {
 	db *sql.DB
 }
 
-// Compile-time check to ensure authorPostgresRepo satisfies the Repository interface.
+// Compile-time check to ensure genrePostgresRepo satisfies the Repository interface.
 var _ Repository = (*genrePostgresRepo)(nil)
 
 // NewPostgresRepository accepts a Ptr to a sql.DB. If the Ptr is nil, an error will be thrown.
@@ -30,7 +30,7 @@ func NewPostgresRepository(db *sql.DB) (*genrePostgresRepo, error) {
 func (r *genrePostgresRepo) GetGenres(ctx context.Context) ([]Genre, error) {
 	rows, err := r.db.QueryContext(ctx, "SELECT * FROM genre")
 	if err != nil {
-		return nil, fmt.Errorf("unable to get authors: %w", err)
+		return nil, fmt.Errorf("unable to get genres: %w", err)
 	}
 	defer rows.Close()
 

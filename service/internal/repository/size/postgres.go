@@ -30,7 +30,7 @@ func NewPostgresRepository(db *sql.DB) (*sizePostgresRepo, error) {
 func (r *sizePostgresRepo) GetSizes(ctx context.Context) ([]Size, error) {
 	rows, err := r.db.QueryContext(ctx, "SELECT * FROM size")
 	if err != nil {
-		return nil, fmt.Errorf("unable to get authors: %w", err)
+		return nil, fmt.Errorf("unable to get sizes: %w", err)
 	}
 	defer rows.Close()
 
