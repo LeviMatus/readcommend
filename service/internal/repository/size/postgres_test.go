@@ -52,21 +52,16 @@ func TestNewPostgresRepository(t *testing.T) {
 
 }
 
-func TestGenrePostgresRepo_GetGenres(t *testing.T) {
+func TestSizePostgresRepo_GetSizes(t *testing.T) {
 
 	var query = "SELECT * FROM size"
 
 	tests := map[string]struct {
-		input                Size
 		expect               []Size
 		setQueryExpectations func(*sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery
 		errAssertion         assert.ErrorAssertionFunc
 	}{
 		"query returns error": {
-			input: Size{
-				ID:    42,
-				Title: "Any",
-			},
 			expect:       nil,
 			errAssertion: assert.Error,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
@@ -74,10 +69,6 @@ func TestGenrePostgresRepo_GetGenres(t *testing.T) {
 			},
 		},
 		"error while scanning result-set": {
-			input: Size{
-				ID:    42,
-				Title: "Any",
-			},
 			expect:       nil,
 			errAssertion: assert.Error,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
@@ -88,10 +79,6 @@ func TestGenrePostgresRepo_GetGenres(t *testing.T) {
 		},
 
 		"successful get sizes": {
-			input: Size{
-				ID:    42,
-				Title: "Any",
-			},
 			expect: []Size{
 				{
 					ID:           0,

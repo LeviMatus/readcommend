@@ -8,7 +8,7 @@ import (
 
 // Size represents a category of a literary work.
 type Size struct {
-	// ID is the Genre's primary key.
+	// ID is the Size's primary key.
 	ID int
 
 	// Title represents the size category.
