@@ -52,7 +52,7 @@ func TestNewPostgresRepository(t *testing.T) {
 
 }
 
-func TestGenrePostgresRepo_GetGenres(t *testing.T) {
+func TestSizePostgresRepo_GetSizes(t *testing.T) {
 
 	var query = "SELECT * FROM size"
 
