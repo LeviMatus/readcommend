@@ -120,8 +120,8 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 				AuthorIDs:        []int16{johnID, christopherID},
 				Limit:            &limit,
 			},
-			expectedQuery: "SELECT * FROM book WHERE author_id IN ($1,$2) AND genre_id IN ($3,$4) AND title = $5 " +
-				"AND rating = $6 AND pages <= $7 AND pages >= $8 AND year_published <= $9 AND year_published <= $10 " +
+			expectedQuery: "SELECT * FROM book WHERE author_id IN ($1,$2) AND genre_id IN ($3,$4) AND title = $5 AND " +
+				"rating = $6 AND pages >= $7 AND pages <= $8 AND year_published >= $9 AND year_published <= $10 " +
 				"ORDER BY rating DESC LIMIT 25",
 			expect:       []Book{silmarillion},
 			errAssertion: assert.NoError,

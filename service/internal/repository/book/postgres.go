@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/Masterminds/squirrel"
+	sq "github.com/Masterminds/squirrel"
 	"github.com/pkg/errors"
 )
 
@@ -31,62 +31,23 @@ func NewPostgresRepository(db *sql.DB) (*bookPostgresRepo, error) {
 // cursing through the result set, then an error is returned.
 func (r *bookPostgresRepo) GetBooks(ctx context.Context, params GetBooksParams) ([]Book, error) {
 
-	builder := squirrel.StatementBuilder.PlaceholderFormat(squirrel.Dollar).Select("*").
+	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).Select("*").
 		From("book").
 		OrderBy("rating DESC")
 
-	if len(params.AuthorIDs) > 0 {
-		placeholders := make([]string, len(params.AuthorIDs))
-		values := make([]interface{}, len(params.AuthorIDs))
-		for i := range params.AuthorIDs {
-			placeholders[i] = "?"
-			values[i] = params.AuthorIDs[i]
-		}
-		builder = builder.
-			PlaceholderFormat(squirrel.Dollar).
-			Where(
-				fmt.Sprintf("author_id IN (%s)", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(placeholders)), ","), "[]")),
-				values...,
-			)
-	}
-
-	if len(params.GenreIDs) > 0 {
-		placeholders := make([]string, len(params.GenreIDs))
-		values := make([]interface{}, len(params.GenreIDs))
-		for i := range params.GenreIDs {
-			placeholders[i] = "?"
-			values[i] = params.GenreIDs[i]
-		}
-		builder = builder.
-			PlaceholderFormat(squirrel.Dollar).
-			Where(
-				fmt.Sprintf("genre_id IN (%s)", strings.Trim(strings.Join(strings.Fields(fmt.Sprint(placeholders)), ","), "[]")),
-				values...)
-	}
+	builder = whereInt16In(builder, "author_id", params.AuthorIDs)
+	builder = whereInt16In(builder, "genre_id", params.GenreIDs)
 
 	if params.Title != nil {
-		builder = builder.PlaceholderFormat(squirrel.Dollar).Where(squirrel.Eq{"title": *params.Title})
+		builder = builder.PlaceholderFormat(sq.Dollar).Where(sq.Eq{"title": *params.Title})
 	}
 
 	if params.Rating != nil {
-		builder = builder.PlaceholderFormat(squirrel.Dollar).Where(squirrel.Eq{"rating": *params.Rating})
+		builder = builder.PlaceholderFormat(sq.Dollar).Where(sq.Eq{"rating": *params.Rating})
 	}
 
-	if params.MaxPages != nil {
-		builder = builder.PlaceholderFormat(squirrel.Dollar).Where(squirrel.LtOrEq{"pages": *params.MaxPages})
-	}
-
-	if params.MinPages != nil {
-		builder = builder.PlaceholderFormat(squirrel.Dollar).Where(squirrel.GtOrEq{"pages": *params.MinPages})
-	}
-
-	if params.MaxYearPublished != nil {
-		builder = builder.PlaceholderFormat(squirrel.Dollar).Where(squirrel.LtOrEq{"year_published": *params.MaxYearPublished})
-	}
-
-	if params.MinYearPublished != nil {
-		builder = builder.PlaceholderFormat(squirrel.Dollar).Where(squirrel.LtOrEq{"year_published": *params.MinYearPublished})
-	}
+	builder = whereInt16Between(builder, "pages", params.MinPages, params.MaxPages)
+	builder = whereInt16Between(builder, "year_published", params.MinYearPublished, params.MaxYearPublished)
 
 	var limit uint64 = 10
 	if params.Limit != nil {
@@ -129,4 +90,43 @@ func (r *bookPostgresRepo) GetBooks(ctx context.Context, params GetBooksParams) 
 // Close terminates the wrapped sql.DB.
 func (r *bookPostgresRepo) Close() error {
 	return r.db.Close()
+}
+
+// whereInt16In accepts a query builder, a target column, and a slice of int16s.
+// If the slice is non-empty, then it a SQL WHERE clause section will be added for
+// records with col values IN the provided ints slice. The mutated builder is returned.
+func whereInt16In(builder sq.SelectBuilder, col string, ints []int16) sq.SelectBuilder {
+	if len(ints) > 0 {
+		var values = make([]interface{}, len(ints))
+		var placeholders = make([]interface{}, len(ints))
+		for i := range values {
+			values[i] = ints[i]
+			placeholders[i] = "?"
+		}
+		return builder.
+			PlaceholderFormat(sq.Dollar).
+			Where(
+				fmt.Sprintf("%s IN (%s)", col, strings.Trim(strings.Join(strings.Fields(fmt.Sprint(placeholders)), ","), "[]")),
+				values...,
+			)
+	}
+
+	return builder
+}
+
+// whereInt16Between accepts a query builder, a target column, and pointers to int16
+// for the min and max values of the range. Because the builder dependency does not support
+// Postgres' BETWEEN semantics, this is done as two WHERE clause filters. Its possible
+// to let min or max be nil. In such a scenario, the query would only provide a lower
+// or upper bound.
+func whereInt16Between(builder sq.SelectBuilder, col string, min *int16, max *int16) sq.SelectBuilder {
+	if min != nil {
+		builder = builder.PlaceholderFormat(sq.Dollar).Where(sq.GtOrEq{col: *min})
+	}
+
+	if max != nil {
+		builder = builder.PlaceholderFormat(sq.Dollar).Where(sq.LtOrEq{col: *max})
+	}
+
+	return builder
 }
