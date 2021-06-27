@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/pkg/errors"
 )
 
@@ -28,7 +29,15 @@ func NewPostgresRepository(db *sql.DB) (*sizePostgresRepo, error) {
 // GetSizes selects all Sizes in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
 func (r *sizePostgresRepo) GetSizes(ctx context.Context) ([]Size, error) {
-	rows, err := r.db.QueryContext(ctx, "SELECT * FROM size")
+	query, _, err := sq.StatementBuilder.
+		Select("*").
+		From("size").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("unable to build SQL query: %w", err)
+	}
+
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get sizes: %w", err)
 	}

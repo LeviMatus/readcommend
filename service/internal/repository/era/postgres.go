@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/pkg/errors"
 )
 
@@ -28,7 +29,15 @@ func NewPostgresRepository(db *sql.DB) (*eraPostgresRepo, error) {
 // GetEras selects all Eras in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
 func (r *eraPostgresRepo) GetEras(ctx context.Context) ([]Era, error) {
-	rows, err := r.db.QueryContext(ctx, "SELECT * FROM era")
+	query, _, err := sq.StatementBuilder.
+		Select("*").
+		From("era").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("unable to build SQL query: %w", err)
+	}
+
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get eras: %w", err)
 	}
