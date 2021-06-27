@@ -5,6 +5,7 @@ import (
 	"database/sql"
 	"fmt"
 
+	sq "github.com/Masterminds/squirrel"
 	"github.com/pkg/errors"
 )
 
@@ -28,7 +29,14 @@ func NewPostgresRepository(db *sql.DB) (*authorPostgresRepo, error) {
 // GetAuthors selects all Authors in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
 func (r *authorPostgresRepo) GetAuthors(ctx context.Context) ([]Author, error) {
-	rows, err := r.db.QueryContext(ctx, "SELECT * FROM author")
+	query, _, err := sq.StatementBuilder.
+		Select("*").
+		From("author").
+		ToSql()
+	if err != nil {
+		return nil, fmt.Errorf("unable to build SQL query: %w", err)
+	}
+	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get authors: %w", err)
 	}
