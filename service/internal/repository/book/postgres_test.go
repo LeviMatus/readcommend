@@ -132,6 +132,36 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 				return query.WillReturnRows(rows)
 			},
 		},
+		"successful get authors with only lower bounds": {
+			input: GetBooksParams{
+				MinYearPublished: &minYear,
+				MinPages:         &minPages,
+			},
+			expectedQuery: "SELECT * FROM book WHERE pages >= $1 AND year_published >= $2 ORDER BY rating DESC LIMIT 10",
+			expect:        []Book{silmarillion},
+			errAssertion:  assert.NoError,
+			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
+				rows := sqlmock.NewRows([]string{"id", "title", "year_published", "rating", "pages", "genre_id", "author_id"}).
+					AddRow(silmarillion.ID, silmarillion.Title, silmarillion.YearPublished, silmarillion.Rating,
+						silmarillion.Pages, silmarillion.GenreID, silmarillion.AuthorID)
+				return query.WillReturnRows(rows)
+			},
+		},
+		"successful get authors with only upper bounds": {
+			input: GetBooksParams{
+				MaxYearPublished: &maxYear,
+				MaxPages:         &maxPages,
+			},
+			expectedQuery: "SELECT * FROM book WHERE pages <= $1 AND year_published <= $2 ORDER BY rating DESC LIMIT 10",
+			expect:        []Book{silmarillion},
+			errAssertion:  assert.NoError,
+			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
+				rows := sqlmock.NewRows([]string{"id", "title", "year_published", "rating", "pages", "genre_id", "author_id"}).
+					AddRow(silmarillion.ID, silmarillion.Title, silmarillion.YearPublished, silmarillion.Rating,
+						silmarillion.Pages, silmarillion.GenreID, silmarillion.AuthorID)
+				return query.WillReturnRows(rows)
+			},
+		},
 	}
 
 	for name, tt := range tests {
