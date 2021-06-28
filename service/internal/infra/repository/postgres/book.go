@@ -41,11 +41,7 @@ func (r *bookRepository) Search(ctx context.Context, params book.SearchInput) ([
 	builder = whereInt16In(builder, "genre_id", params.GenreIDs)
 
 	if params.Title != nil {
-		builder = builder.PlaceholderFormat(sq.Dollar).Where(sq.Eq{"title": *params.Title})
-	}
-
-	if params.Rating != nil {
-		builder = builder.PlaceholderFormat(sq.Dollar).Where(sq.Eq{"rating": *params.Rating})
+		builder = builder.PlaceholderFormat(sq.Dollar).Where(sq.Eq{"book.title": *params.Title})
 	}
 
 	builder = whereInt16Between(builder, "pages", params.MinPages, params.MaxPages)
@@ -62,7 +58,7 @@ func (r *bookRepository) Search(ctx context.Context, params book.SearchInput) ([
 		return nil, fmt.Errorf("unable to build SQL query: %w", err)
 	}
 
-	rows, err := r.db.QueryContext(ctx, query, values...)
+	rows, err := r.db.Query(query, values...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get books: %w", err)
 	}

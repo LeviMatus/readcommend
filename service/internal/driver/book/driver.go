@@ -14,7 +14,6 @@ type SearchInput struct {
 	MinYearPublished *int16
 	MaxPages         *int16
 	MinPages         *int16
-	Rating           *float32
 	GenreIDs         []int16
 	AuthorIDs        []int16
 	Limit            *uint64
