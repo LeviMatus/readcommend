@@ -57,9 +57,9 @@ func NewSizeRepository(db *sql.DB) (*sizeRepository, error) {
 	}, nil
 }
 
-// GetSizes selects all Sizes in the repository. If the query fails or encounters an error while
+// List selects all Sizes in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
-func (r *sizeRepository) GetSizes(ctx context.Context) ([]entity.Size, error) {
+func (r *sizeRepository) List(ctx context.Context) ([]entity.Size, error) {
 	query, _, err := sq.StatementBuilder.
 		Select("*").
 		From("size").

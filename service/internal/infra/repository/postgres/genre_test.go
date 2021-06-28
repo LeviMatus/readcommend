@@ -90,7 +90,7 @@ func TestGenreRepository_GetGenres(t *testing.T) {
 
 			tt.setQueryExpectations(mock.ExpectQuery(regexp.QuoteMeta(query)))
 
-			actual, err := repo.GetGenres(context.Background())
+			actual, err := repo.List(context.Background())
 			assert.Equal(t, tt.expect, actual)
 			tt.errAssertion(t, err)
 		})

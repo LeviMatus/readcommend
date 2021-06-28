@@ -23,9 +23,9 @@ func NewAuthorRepository(db *sql.DB) (*authorRepository, error) {
 	}, nil
 }
 
-// GetAuthors selects all Authors in the repository. If the query fails or encounters an error while
+// List selects all Authors in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
-func (r *authorRepository) GetAuthors(ctx context.Context) ([]entity.Author, error) {
+func (r *authorRepository) List(ctx context.Context) ([]entity.Author, error) {
 	query, _, err := sq.StatementBuilder.
 		Select("*").
 		From("author").

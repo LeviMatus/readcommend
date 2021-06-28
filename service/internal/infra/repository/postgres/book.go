@@ -6,23 +6,10 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/LeviMatus/readcommend/service/internal/driver/book"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	sq "github.com/Masterminds/squirrel"
 )
-
-type GetBooksParams struct {
-	_ struct{}
-
-	Title            *string
-	MaxYearPublished *int16
-	MinYearPublished *int16
-	MaxPages         *int16
-	MinPages         *int16
-	Rating           *float32
-	GenreIDs         []int16
-	AuthorIDs        []int16
-	Limit            *uint64
-}
 
 type bookRepository struct {
 	db *sql.DB
@@ -38,9 +25,9 @@ func NewBookRepository(db *sql.DB) (*bookRepository, error) {
 	}, nil
 }
 
-// GetBooks selects all Books in the repository. If the query fails or encounters an error while
+// Search selects all Books in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
-func (r *bookRepository) GetBooks(ctx context.Context, params GetBooksParams) ([]entity.Book, error) {
+func (r *bookRepository) Search(ctx context.Context, params book.SearchInput) ([]entity.Book, error) {
 
 	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).
 		Select("book.id", "book.title", "year_published", "rating",
