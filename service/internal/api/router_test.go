@@ -98,4 +98,15 @@ func TestServer_Serve(t *testing.T) {
 			assert.Equal(t, http.StatusOK, response.StatusCode)
 		})
 	}
+
+	t.Run("invalid HTTP method", func(t *testing.T) {
+		dbDriver := drivertest.DriverMock{}
+		apiServer, err := New(&dbDriver, config.API{})
+		assert.NoError(t, err)
+		assert.NotNil(t, apiServer)
+		testServer := httptest.NewServer(apiServer.mux)
+		response, err := testServer.Client().Head(fmt.Sprintf("%s/api/v1/books", testServer.URL))
+		assert.NoError(t, err)
+		assert.Equal(t, 405, response.StatusCode)
+	})
 }
