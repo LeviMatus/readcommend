@@ -11,5 +11,5 @@ type Repository interface {
 }
 
 type Driver interface {
-	ListGenres(ctx context.Context)
+	ListGenres(ctx context.Context) ([]entity.Genre, error)
 }
