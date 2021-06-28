@@ -1,15 +1,16 @@
 package v1
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 
+	driver2 "github.com/LeviMatus/readcommend/service/internal/driver"
+	"github.com/LeviMatus/readcommend/service/pkg/config"
 	"github.com/go-chi/chi/v5"
 )
 
-func NewRouter(db *sql.DB) (*chi.Mux, error) {
-	bookHandler, err := NewBookHandler(db)
+func NewRouter(driver driver2.Driver, config config.API) (*chi.Mux, error) {
+	bookHandler, err := NewBookHandler(driver, config)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
 	}

@@ -1,12 +1,12 @@
 package api
 
 import (
-	"database/sql"
 	"fmt"
 	"net/http"
 	"time"
 
 	v1 "github.com/LeviMatus/readcommend/service/internal/api/v1"
+	"github.com/LeviMatus/readcommend/service/internal/driver"
 	"github.com/LeviMatus/readcommend/service/pkg/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
@@ -20,7 +20,7 @@ type Server struct {
 	port string
 }
 
-func New(conn *sql.DB, config config.API) (*Server, error) {
+func New(driver driver.Driver, config config.API) (*Server, error) {
 	s := Server{
 		mux:  chi.NewRouter(),
 		host: config.Interface,
@@ -35,7 +35,7 @@ func New(conn *sql.DB, config config.API) (*Server, error) {
 		render.SetContentType(render.ContentTypeJSON),
 	)
 
-	v1Router, err := v1.NewRouter(conn)
+	v1Router, err := v1.NewRouter(driver, config)
 	if err != nil {
 		return nil, err
 	}
