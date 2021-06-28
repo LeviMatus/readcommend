@@ -5,13 +5,12 @@ import (
 	"net/http"
 
 	driver2 "github.com/LeviMatus/readcommend/service/internal/driver"
-	"github.com/LeviMatus/readcommend/service/pkg/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/cors"
 )
 
-func NewRouter(driver driver2.Driver, config config.API) (*chi.Mux, error) {
-	bookHandler, err := NewBookHandler(driver, config)
+func NewRouter(driver driver2.Driver) (*chi.Mux, error) {
+	bookHandler, err := NewBookHandler(driver)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
 	}

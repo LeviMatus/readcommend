@@ -6,7 +6,6 @@ import (
 	"github.com/LeviMatus/readcommend/service/internal/api/params"
 	"github.com/LeviMatus/readcommend/service/internal/driver/book"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
-	"github.com/LeviMatus/readcommend/service/pkg/config"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
 )
@@ -16,7 +15,7 @@ type Book struct {
 	driver book.Driver
 }
 
-func NewBookHandler(driver book.Driver, config config.API) (*Book, error) {
+func NewBookHandler(driver book.Driver) (*Book, error) {
 	if driver == nil {
 		return nil, errors.New("non-nil book driver is required to create a book handler")
 	}
