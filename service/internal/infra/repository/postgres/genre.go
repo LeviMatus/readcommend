@@ -23,9 +23,9 @@ func NewGenreRepository(db *sql.DB) (*genreRepository, error) {
 	}, nil
 }
 
-// GetGenres selects all Genres in the repository. If the query fails or encounters an error while
+// List selects all Genres in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
-func (r *genreRepository) GetGenres(ctx context.Context) ([]entity.Genre, error) {
+func (r *genreRepository) List(ctx context.Context) ([]entity.Genre, error) {
 	query, _, err := sq.StatementBuilder.
 		Select("*").
 		From("genre").

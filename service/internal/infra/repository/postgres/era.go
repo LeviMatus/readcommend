@@ -55,9 +55,9 @@ func NewEraRepository(db *sql.DB) (*eraRepository, error) {
 	}, nil
 }
 
-// GetEras selects all Eras in the repository. If the query fails or encounters an error while
+// List selects all Eras in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
-func (r *eraRepository) GetEras(ctx context.Context) ([]entity.Era, error) {
+func (r *eraRepository) List(ctx context.Context) ([]entity.Era, error) {
 	query, _, err := sq.StatementBuilder.
 		Select("*").
 		From("era").

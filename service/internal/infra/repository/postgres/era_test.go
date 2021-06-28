@@ -104,7 +104,7 @@ func TestEraPostgresRepo_GetEras(t *testing.T) {
 
 			tt.setQueryExpectations(mock.ExpectQuery(regexp.QuoteMeta(query)))
 
-			actual, err := repo.GetEras(context.Background())
+			actual, err := repo.List(context.Background())
 			assert.True(t, reflect.DeepEqual(tt.expect, actual))
 			tt.errAssertion(t, err)
 		})

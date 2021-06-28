@@ -7,6 +7,7 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/LeviMatus/readcommend/service/internal/driver/book"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
@@ -70,7 +71,7 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 	)
 
 	tests := map[string]struct {
-		input                GetBooksParams
+		input                book.SearchInput
 		expectedQuery        string
 		expect               []entity.Book
 		setQueryExpectations func(*sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery
@@ -105,7 +106,7 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 			},
 		},
 		"successful get authors with all parameters": {
-			input: GetBooksParams{
+			input: book.SearchInput{
 				Title:            &title,
 				MaxYearPublished: &maxYear,
 				MinYearPublished: &minYear,
@@ -132,7 +133,7 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 			},
 		},
 		"successful get authors with only lower bounds": {
-			input: GetBooksParams{
+			input: book.SearchInput{
 				MinYearPublished: &minYear,
 				MinPages:         &minPages,
 			},
@@ -151,7 +152,7 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 			},
 		},
 		"successful get authors with only upper bounds": {
-			input: GetBooksParams{
+			input: book.SearchInput{
 				MaxYearPublished: &maxYear,
 				MaxPages:         &maxPages,
 			},
@@ -178,7 +179,7 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 
 			tt.setQueryExpectations(mock.ExpectQuery(regexp.QuoteMeta(tt.expectedQuery)))
 
-			actual, err := repo.GetBooks(context.Background(), tt.input)
+			actual, err := repo.Search(context.Background(), tt.input)
 			assert.Equal(t, tt.expect, actual)
 			tt.errAssertion(t, err)
 		})
