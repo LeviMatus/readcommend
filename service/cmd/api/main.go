@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"fmt"
 	"log"
-	"time"
+	"net"
 
 	"github.com/LeviMatus/readcommend/service/internal/api"
 	"github.com/LeviMatus/readcommend/service/internal/driver"
@@ -33,7 +33,6 @@ func main() {
 		API: config.API{
 			Port:      "5000",
 			Interface: "0.0.0.0",
-			Timeout:   15 * time.Second,
 		},
 	}
 
@@ -91,5 +90,6 @@ func main() {
 		log.Fatal(err)
 	}
 
-	r.Listen()
+	l, _ := net.Listen("tcp", fmt.Sprintf("%s:%s", cfg.API.Interface, cfg.API.Port))
+	r.Serve(l)
 }
