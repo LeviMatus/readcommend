@@ -1,7 +1,7 @@
 package api
 
 import (
-	"fmt"
+	"net"
 	"net/http"
 
 	v1 "github.com/LeviMatus/readcommend/service/internal/api/v1"
@@ -10,6 +10,7 @@ import (
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
+	"github.com/pkg/errors"
 )
 
 type Server struct {
@@ -20,10 +21,12 @@ type Server struct {
 }
 
 func New(driver driver.Driver, config config.API) (*Server, error) {
+	if driver == nil {
+		return nil, errors.New("a non-nil driver is required")
+	}
+
 	s := Server{
-		mux:  chi.NewRouter(),
-		host: config.Interface,
-		port: config.Port,
+		mux: chi.NewRouter(),
 	}
 
 	s.mux.Use(
@@ -45,6 +48,6 @@ func New(driver driver.Driver, config config.API) (*Server, error) {
 	return &s, nil
 }
 
-func (s *Server) Listen() error {
-	return http.ListenAndServe(fmt.Sprintf("%s:%s", s.host, s.port), s.mux)
+func (s *Server) Serve(listener net.Listener) error {
+	return http.Serve(listener, s.mux)
 }
