@@ -14,6 +14,6 @@ func NewDriver(r Repository) *driver {
 	return &driver{repository: r}
 }
 
-func (d *driver) List(ctx context.Context) ([]entity.Author, error) {
+func (d *driver) ListAuthors(ctx context.Context) ([]entity.Author, error) {
 	return d.repository.List(ctx)
 }

@@ -28,7 +28,7 @@ func TestDriver_List(t *testing.T) {
 	repo := inMemoryRepository{resource: map[int32]entity.Genre{1: g}}
 
 	driver := genre.NewDriver(&repo)
-	res, err := driver.List(context.Background())
+	res, err := driver.ListGenres(context.Background())
 	assert.NoError(t, err)
 	assert.Len(t, res, 1)
 	assert.Contains(t, res, g)

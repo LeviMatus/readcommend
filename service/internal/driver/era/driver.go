@@ -14,6 +14,6 @@ func NewDriver(r Repository) *driver {
 	return &driver{repository: r}
 }
 
-func (d *driver) List(ctx context.Context) ([]entity.Era, error) {
+func (d *driver) ListEras(ctx context.Context) ([]entity.Era, error) {
 	return d.repository.List(ctx)
 }

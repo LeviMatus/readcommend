@@ -11,5 +11,5 @@ type Repository interface {
 }
 
 type Driver interface {
-	List(ctx context.Context) ([]entity.Era, error)
+	ListEras(ctx context.Context) ([]entity.Era, error)
 }
