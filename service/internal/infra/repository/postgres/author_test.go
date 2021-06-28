@@ -1,4 +1,4 @@
-package author
+package postgres
 
 import (
 	"context"
@@ -7,25 +7,18 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
-func newMock(t *testing.T) (*sql.DB, sqlmock.Sqlmock) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("unable to create sql mock: %v", err)
-	}
-	return db, mock
-}
-
-func TestNewPostgresRepository(t *testing.T) {
+func TestNewAuthorRepository(t *testing.T) {
 
 	var db sql.DB
 
 	tests := map[string]struct {
 		input        *sql.DB
-		expect       *authorPostgresRepo
+		expect       *authorRepository
 		errAssertion assert.ErrorAssertionFunc
 	}{
 		"error on nil input": {
@@ -35,14 +28,14 @@ func TestNewPostgresRepository(t *testing.T) {
 		},
 		"successful create repository": {
 			input:        &db,
-			expect:       &authorPostgresRepo{db: &db},
+			expect:       &authorRepository{db: &db},
 			errAssertion: assert.NoError,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual, err := NewPostgresRepository(tt.input)
+			actual, err := NewAuthorRepository(tt.input)
 			assert.Equal(t, tt.expect, actual)
 			tt.errAssertion(t, err)
 		})
@@ -55,7 +48,7 @@ func TestAuthorPostgresRepo_GetAuthors(t *testing.T) {
 	var query = "SELECT * FROM author"
 
 	tests := map[string]struct {
-		expect               []Author
+		expect               []entity.Author
 		setQueryExpectations func(*sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery
 		errAssertion         assert.ErrorAssertionFunc
 	}{
@@ -77,7 +70,7 @@ func TestAuthorPostgresRepo_GetAuthors(t *testing.T) {
 		},
 
 		"successful get authors": {
-			expect: []Author{{
+			expect: []entity.Author{{
 				ID:        42,
 				FirstName: "john",
 				LastName:  "doe",
@@ -94,10 +87,7 @@ func TestAuthorPostgresRepo_GetAuthors(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			db, mock := newMock(t)
-			repo := &authorPostgresRepo{db}
-			defer func() {
-				repo.Close()
-			}()
+			repo := &authorRepository{db}
 
 			tt.setQueryExpectations(mock.ExpectQuery(regexp.QuoteMeta(query)))
 

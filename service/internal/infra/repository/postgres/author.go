@@ -1,34 +1,31 @@
-package author
+package postgres
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
 
+	"github.com/LeviMatus/readcommend/service/internal/entity"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/pkg/errors"
 )
 
-type authorPostgresRepo struct {
+type authorRepository struct {
 	db *sql.DB
 }
 
-// Compile-time check to ensure authorPostgresRepo satisfies the Repository interface.
-var _ Repository = (*authorPostgresRepo)(nil)
-
-// NewPostgresRepository accepts a Ptr to a sql.DB. If the Ptr is nil, an error will be thrown.
-// The returned repository interfaces with Postgres as its DB resource.
-func NewPostgresRepository(db *sql.DB) (*authorPostgresRepo, error) {
+func NewAuthorRepository(db *sql.DB) (*authorRepository, error) {
 	if db == nil {
-		return nil, errors.New("expected a non-nil db")
+		return nil, ErrInvalidDependency
 	}
 
-	return &authorPostgresRepo{db: db}, nil
+	return &authorRepository{
+		db: db,
+	}, nil
 }
 
 // GetAuthors selects all Authors in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
-func (r *authorPostgresRepo) GetAuthors(ctx context.Context) ([]Author, error) {
+func (r *authorRepository) GetAuthors(ctx context.Context) ([]entity.Author, error) {
 	query, _, err := sq.StatementBuilder.
 		Select("*").
 		From("author").
@@ -42,9 +39,9 @@ func (r *authorPostgresRepo) GetAuthors(ctx context.Context) ([]Author, error) {
 	}
 	defer rows.Close()
 
-	var authors []Author
+	var authors []entity.Author
 	for rows.Next() {
-		var author Author
+		var author entity.Author
 		if err = rows.Scan(&author.ID, &author.FirstName, &author.LastName); err != nil {
 			return nil, fmt.Errorf("unable to scan data into author: %w", err)
 		}
@@ -55,9 +52,4 @@ func (r *authorPostgresRepo) GetAuthors(ctx context.Context) ([]Author, error) {
 	}
 
 	return authors, nil
-}
-
-// Close terminates the wrapped sql.DB.
-func (r *authorPostgresRepo) Close() error {
-	return r.db.Close()
 }
