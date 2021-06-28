@@ -1,9 +1,7 @@
 package v1
 
 import (
-	"context"
 	"net/http"
-	"time"
 
 	"github.com/LeviMatus/readcommend/service/internal/api/params"
 	"github.com/LeviMatus/readcommend/service/internal/driver/book"
@@ -15,8 +13,7 @@ import (
 
 // Book...
 type Book struct {
-	driver  book.Driver
-	timeout time.Duration
+	driver book.Driver
 }
 
 func NewBookHandler(driver book.Driver, config config.API) (*Book, error) {
@@ -24,13 +21,10 @@ func NewBookHandler(driver book.Driver, config config.API) (*Book, error) {
 		return nil, errors.New("non-nil book driver is required to create a book handler")
 	}
 
-	return &Book{driver: driver, timeout: config.Timeout}, nil
+	return &Book{driver: driver}, nil
 }
 
 func (b *Book) List(w http.ResponseWriter, r *http.Request) {
-	ctx, cancel := context.WithTimeout(r.Context(), b.timeout)
-	defer cancel()
-
 	var (
 		title     *string
 		minPages  *int16
@@ -42,51 +36,51 @@ func (b *Book) List(w http.ResponseWriter, r *http.Request) {
 		limit     *uint64
 	)
 
-	title = params.String(ctx, "title")
+	title = params.String(r, "title")
 
-	minPages, err := params.Int16(ctx, "min_pages")
+	minPages, err := params.Int16(r, "min_pages")
 	if err != nil {
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
 
-	maxPages, err = params.Int16(ctx, "max_pages")
+	maxPages, err = params.Int16(r, "max_pages")
 	if err != nil {
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
 
-	maxYear, err = params.Int16(ctx, "max_year")
+	maxYear, err = params.Int16(r, "max_year")
 	if err != nil {
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
 
-	minYear, err = params.Int16(ctx, "min_year")
+	minYear, err = params.Int16(r, "min_year")
 	if err != nil {
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
 
-	authorIDs, err = params.Int16Slice(r, "author_ids")
+	authorIDs, err = params.Int16Slice(r, "authors")
 	if err != nil {
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
 
-	genreIDs, err = params.Int16Slice(r, "genre_ids")
+	genreIDs, err = params.Int16Slice(r, "genres")
 	if err != nil {
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
 
-	limit, err = params.Uint64(ctx, "limit")
+	limit, err = params.Uint64(r, "limit")
 	if err != nil {
 		http.Error(w, http.StatusText(422), 422)
 		return
 	}
 
-	books, err := b.driver.SearchBooks(ctx, book.SearchInput{
+	books, err := b.driver.SearchBooks(r.Context(), book.SearchInput{
 		Title:            title,
 		MaxYearPublished: maxYear,
 		MinYearPublished: minYear,

@@ -1,9 +1,5 @@
 package config
 
-import (
-	"time"
-)
-
 type Config struct {
 	Database
 	API
@@ -23,5 +19,4 @@ type Database struct {
 type API struct {
 	Port      string
 	Interface string
-	Timeout   time.Duration
 }

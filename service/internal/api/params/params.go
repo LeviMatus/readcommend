@@ -1,23 +1,22 @@
 package params
 
 import (
-	"context"
 	"net/http"
 	"strconv"
 
 	"github.com/LeviMatus/readcommend/service/pkg/util"
-	"github.com/go-chi/chi/v5"
 	"github.com/pkg/errors"
 )
 
-func String(ctx context.Context, n string) *string {
-	val := chi.URLParamFromCtx(ctx, n)
+func String(r *http.Request, n string) *string {
+	val := r.URL.Query().Get(n)
 	return util.StringPtr(val)
 }
 
-func Int16(ctx context.Context, n string) (*int16, error) {
-	val, err := strconv.ParseInt(chi.URLParamFromCtx(ctx, n), 10, 16)
-	if errors.Is(err, strconv.ErrSyntax) && chi.URLParamFromCtx(ctx, n) == "" {
+func Int16(r *http.Request, n string) (*int16, error) {
+	param := r.URL.Query().Get(n)
+	val, err := strconv.ParseInt(param, 10, 16)
+	if errors.Is(err, strconv.ErrSyntax) && param == "" {
 		return nil, nil
 	}
 	if err != nil {
@@ -27,9 +26,10 @@ func Int16(ctx context.Context, n string) (*int16, error) {
 	return &out, err
 }
 
-func Uint64(ctx context.Context, n string) (*uint64, error) {
-	val, err := strconv.ParseUint(chi.URLParamFromCtx(ctx, n), 10, 64)
-	if errors.Is(err, strconv.ErrSyntax) && chi.URLParamFromCtx(ctx, n) == "" {
+func Uint64(r *http.Request, n string) (*uint64, error) {
+	param := r.URL.Query().Get(n)
+	val, err := strconv.ParseUint(param, 10, 64)
+	if errors.Is(err, strconv.ErrSyntax) && param == "" {
 		return nil, nil
 	}
 	if err != nil {

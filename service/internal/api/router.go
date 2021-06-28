@@ -3,7 +3,6 @@ package api
 import (
 	"fmt"
 	"net/http"
-	"time"
 
 	v1 "github.com/LeviMatus/readcommend/service/internal/api/v1"
 	"github.com/LeviMatus/readcommend/service/internal/driver"
@@ -31,7 +30,6 @@ func New(driver driver.Driver, config config.API) (*Server, error) {
 		middleware.RequestID,
 		middleware.Logger,
 		middleware.Recoverer,
-		middleware.Timeout(20*time.Second),
 		render.SetContentType(render.ContentTypeJSON),
 	)
 
