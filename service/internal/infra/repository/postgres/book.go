@@ -1,4 +1,4 @@
-package book
+package postgres
 
 import (
 	"context"
@@ -6,33 +6,48 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/LeviMatus/readcommend/service/internal/entity"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/pkg/errors"
 )
 
-type bookPostgresRepo struct {
+type GetBooksParams struct {
+	_ struct{}
+
+	Title            *string
+	MaxYearPublished *int16
+	MinYearPublished *int16
+	MaxPages         *int16
+	MinPages         *int16
+	Rating           *float32
+	GenreIDs         []int16
+	AuthorIDs        []int16
+	Limit            *uint64
+}
+
+type bookRepository struct {
 	db *sql.DB
 }
 
-// Compile-time check to ensure bookPostgresRepo satisfies the Repository interface.
-var _ Repository = (*bookPostgresRepo)(nil)
-
-// NewPostgresRepository accepts a Ptr to a sql.DB. If the Ptr is nil, an error will be thrown.
-// The returned repository interfaces with Postgres as its DB resource.
-func NewPostgresRepository(db *sql.DB) (*bookPostgresRepo, error) {
+func NewBookRepository(db *sql.DB) (*bookRepository, error) {
 	if db == nil {
-		return nil, errors.New("expected a non-nil db")
+		return nil, ErrInvalidDependency
 	}
 
-	return &bookPostgresRepo{db: db}, nil
+	return &bookRepository{
+		db: db,
+	}, nil
 }
 
 // GetBooks selects all Books in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
-func (r *bookPostgresRepo) GetBooks(ctx context.Context, params GetBooksParams) ([]Book, error) {
+func (r *bookRepository) GetBooks(ctx context.Context, params GetBooksParams) ([]entity.Book, error) {
 
-	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).Select("*").
+	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).
+		Select("book.id", "book.title", "year_published", "rating",
+			"pages", "author.id", "first_name", "last_name", "genre.id", "genre.title").
 		From("book").
+		LeftJoin("author ON book.author_id = author.id").
+		LeftJoin("genre ON book.genre_id = genre.id").
 		OrderBy("rating DESC")
 
 	builder = whereInt16In(builder, "author_id", params.AuthorIDs)
@@ -66,16 +81,19 @@ func (r *bookPostgresRepo) GetBooks(ctx context.Context, params GetBooksParams) 
 	}
 	defer rows.Close()
 
-	var books []Book
+	var books []entity.Book
 	for rows.Next() {
-		var book Book
+		var book entity.Book
 		if err = rows.Scan(&book.ID,
 			&book.Title,
 			&book.YearPublished,
 			&book.Rating,
 			&book.Pages,
-			&book.GenreID,
-			&book.AuthorID); err != nil {
+			&book.Author.ID,
+			&book.Author.FirstName,
+			&book.Author.LastName,
+			&book.Genre.ID,
+			&book.Genre.Title); err != nil {
 			return nil, fmt.Errorf("unable to scan data into book: %w", err)
 		}
 		books = append(books, book)
@@ -85,11 +103,6 @@ func (r *bookPostgresRepo) GetBooks(ctx context.Context, params GetBooksParams) 
 	}
 
 	return books, nil
-}
-
-// Close terminates the wrapped sql.DB.
-func (r *bookPostgresRepo) Close() error {
-	return r.db.Close()
 }
 
 // whereInt16In accepts a query builder, a target column, and a slice of int16s.

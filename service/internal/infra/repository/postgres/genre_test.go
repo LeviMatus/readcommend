@@ -1,33 +1,24 @@
-package era
+package postgres
 
 import (
 	"context"
 	"database/sql"
-	"reflect"
 	"regexp"
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
-	"github.com/LeviMatus/readcommend/service/internal/encoding"
+	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
-func newMock(t *testing.T) (*sql.DB, sqlmock.Sqlmock) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("unable to create sql mock: %v", err)
-	}
-	return db, mock
-}
-
-func TestNewPostgresRepository(t *testing.T) {
+func TestNewGenreRepository(t *testing.T) {
 
 	var db sql.DB
 
 	tests := map[string]struct {
 		input        *sql.DB
-		expect       *eraPostgresRepo
+		expect       *genreRepository
 		errAssertion assert.ErrorAssertionFunc
 	}{
 		"error on nil input": {
@@ -37,14 +28,14 @@ func TestNewPostgresRepository(t *testing.T) {
 		},
 		"successful create repository": {
 			input:        &db,
-			expect:       &eraPostgresRepo{db: &db},
+			expect:       &genreRepository{db: &db},
 			errAssertion: assert.NoError,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual, err := NewPostgresRepository(tt.input)
+			actual, err := NewGenreRepository(tt.input)
 			assert.Equal(t, tt.expect, actual)
 			tt.errAssertion(t, err)
 		})
@@ -52,12 +43,12 @@ func TestNewPostgresRepository(t *testing.T) {
 
 }
 
-func TestEraPostgresRepo_GetEras(t *testing.T) {
+func TestGenreRepository_GetGenres(t *testing.T) {
 
-	var query = "SELECT * FROM era"
+	var query = "SELECT * FROM genre"
 
 	tests := map[string]struct {
-		expect               []Era
+		expect               []entity.Genre
 		setQueryExpectations func(*sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery
 		errAssertion         assert.ErrorAssertionFunc
 	}{
@@ -78,31 +69,15 @@ func TestEraPostgresRepo_GetEras(t *testing.T) {
 			},
 		},
 
-		"successful get eras": {
-			expect: []Era{
-				{
-					ID:        0,
-					Title:     "Any",
-					StartYear: encoding.NullInt16{},
-					EndYear:   encoding.NullInt16{},
-				}, {
-					ID:        1,
-					Title:     "Classic",
-					StartYear: encoding.NullInt16{},
-					EndYear:   encoding.NullInt16{Int16: 1969, Valid: true},
-				}, {
-					ID:        2,
-					Title:     "Modern",
-					StartYear: encoding.NullInt16{Int16: 1970, Valid: true},
-					EndYear:   encoding.NullInt16{},
-				},
-			},
+		"successful get genres": {
+			expect: []entity.Genre{{
+				ID:    42,
+				Title: "SciFi/Fantasy",
+			}},
 			errAssertion: assert.NoError,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
-				rows := sqlmock.NewRows([]string{"id", "title", "min_year", "max_year"}).
-					AddRow(0, "Any", nil, nil).
-					AddRow(1, "Classic", nil, 1969).
-					AddRow(2, "Modern", 1970, nil)
+				rows := sqlmock.NewRows([]string{"id", "title"}).
+					AddRow(42, "SciFi/Fantasy")
 				return query.WillReturnRows(rows)
 			},
 		},
@@ -111,15 +86,12 @@ func TestEraPostgresRepo_GetEras(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			db, mock := newMock(t)
-			repo := &eraPostgresRepo{db}
-			defer func() {
-				repo.Close()
-			}()
+			repo := &genreRepository{db}
 
 			tt.setQueryExpectations(mock.ExpectQuery(regexp.QuoteMeta(query)))
 
-			actual, err := repo.GetEras(context.Background())
-			assert.True(t, reflect.DeepEqual(tt.expect, actual))
+			actual, err := repo.GetGenres(context.Background())
+			assert.Equal(t, tt.expect, actual)
 			tt.errAssertion(t, err)
 		})
 	}

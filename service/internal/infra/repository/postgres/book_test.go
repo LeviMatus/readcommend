@@ -1,4 +1,4 @@
-package book
+package postgres
 
 import (
 	"context"
@@ -7,25 +7,18 @@ import (
 	"testing"
 
 	"github.com/DATA-DOG/go-sqlmock"
+	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 )
 
-func newMock(t *testing.T) (*sql.DB, sqlmock.Sqlmock) {
-	db, mock, err := sqlmock.New()
-	if err != nil {
-		t.Fatalf("unable to create sql mock: %v", err)
-	}
-	return db, mock
-}
-
-func TestNewPostgresRepository(t *testing.T) {
+func TestNewBookRepository(t *testing.T) {
 
 	var db sql.DB
 
 	tests := map[string]struct {
 		input        *sql.DB
-		expect       *bookPostgresRepo
+		expect       *bookRepository
 		errAssertion assert.ErrorAssertionFunc
 	}{
 		"error on nil input": {
@@ -35,14 +28,14 @@ func TestNewPostgresRepository(t *testing.T) {
 		},
 		"successful create repository": {
 			input:        &db,
-			expect:       &bookPostgresRepo{db: &db},
+			expect:       &bookRepository{db: &db},
 			errAssertion: assert.NoError,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual, err := NewPostgresRepository(tt.input)
+			actual, err := NewBookRepository(tt.input)
 			assert.Equal(t, tt.expect, actual)
 			tt.errAssertion(t, err)
 		})
@@ -65,21 +58,21 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 		christopherID int16   = 43
 		limit         uint64  = 25
 
-		silmarillion = Book{
+		silmarillion = entity.Book{
 			ID:            1000,
 			Title:         title,
 			YearPublished: 1977,
 			Rating:        3.9,
 			Pages:         365,
-			GenreID:       2,
-			AuthorID:      christopherID,
+			Genre:         entity.Genre{ID: 2},
+			Author:        entity.Author{ID: 43},
 		}
 	)
 
 	tests := map[string]struct {
 		input                GetBooksParams
 		expectedQuery        string
-		expect               []Book
+		expect               []entity.Book
 		setQueryExpectations func(*sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery
 		errAssertion         assert.ErrorAssertionFunc
 	}{
@@ -98,13 +91,16 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 			},
 		},
 		"successful get authors with no parameters": {
-			expectedQuery: "SELECT * FROM book ORDER BY rating DESC LIMIT 10",
-			expect:        []Book{silmarillion},
-			errAssertion:  assert.NoError,
+			expectedQuery: "SELECT book.id, book.title, year_published, rating, pages, author.id, first_name, " +
+				"last_name, genre.id, genre.title FROM book LEFT JOIN author ON book.author_id = author.id " +
+				"LEFT JOIN genre ON book.genre_id = genre.id ORDER BY rating DESC LIMIT 10",
+			expect:       []entity.Book{silmarillion},
+			errAssertion: assert.NoError,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
-				rows := sqlmock.NewRows([]string{"id", "title", "year_published", "rating", "pages", "genre_id", "author_id"}).
+				rows := sqlmock.NewRows([]string{"book.id", "book.title", "year_published", "rating", "pages", "author.id", "first_name", "last_name", "genre.id", "genre.title"}).
 					AddRow(silmarillion.ID, silmarillion.Title, silmarillion.YearPublished, silmarillion.Rating,
-						silmarillion.Pages, silmarillion.GenreID, silmarillion.AuthorID)
+						silmarillion.Pages, silmarillion.Author.ID, silmarillion.Author.FirstName, silmarillion.Author.LastName,
+						silmarillion.Genre.ID, silmarillion.Genre.Title)
 				return query.WillReturnRows(rows)
 			},
 		},
@@ -120,15 +116,18 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 				AuthorIDs:        []int16{johnID, christopherID},
 				Limit:            &limit,
 			},
-			expectedQuery: "SELECT * FROM book WHERE author_id IN ($1,$2) AND genre_id IN ($3,$4) AND title = $5 AND " +
-				"rating = $6 AND pages >= $7 AND pages <= $8 AND year_published >= $9 AND year_published <= $10 " +
-				"ORDER BY rating DESC LIMIT 25",
-			expect:       []Book{silmarillion},
+			expectedQuery: "SELECT book.id, book.title, year_published, rating, pages, author.id, first_name, " +
+				"last_name, genre.id, genre.title " +
+				"FROM book LEFT JOIN author ON book.author_id = author.id LEFT JOIN genre ON book.genre_id = genre.id " +
+				"WHERE author_id IN ($1,$2) AND genre_id IN ($3,$4) AND title = $5 AND rating = $6 AND pages >= $7 " +
+				"AND pages <= $8 AND year_published >= $9 AND year_published <= $10 ORDER BY rating DESC LIMIT 25",
+			expect:       []entity.Book{silmarillion},
 			errAssertion: assert.NoError,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
-				rows := sqlmock.NewRows([]string{"id", "title", "year_published", "rating", "pages", "genre_id", "author_id"}).
+				rows := sqlmock.NewRows([]string{"book.id", "book.title", "year_published", "rating", "pages", "author.id", "first_name", "last_name", "genre.id", "genre.title"}).
 					AddRow(silmarillion.ID, silmarillion.Title, silmarillion.YearPublished, silmarillion.Rating,
-						silmarillion.Pages, silmarillion.GenreID, silmarillion.AuthorID)
+						silmarillion.Pages, silmarillion.Author.ID, silmarillion.Author.FirstName, silmarillion.Author.LastName,
+						silmarillion.Genre.ID, silmarillion.Genre.Title)
 				return query.WillReturnRows(rows)
 			},
 		},
@@ -137,13 +136,17 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 				MinYearPublished: &minYear,
 				MinPages:         &minPages,
 			},
-			expectedQuery: "SELECT * FROM book WHERE pages >= $1 AND year_published >= $2 ORDER BY rating DESC LIMIT 10",
-			expect:        []Book{silmarillion},
-			errAssertion:  assert.NoError,
+			expectedQuery: "SELECT book.id, book.title, year_published, rating, pages, author.id, first_name, " +
+				"last_name, genre.id, genre.title " +
+				"FROM book LEFT JOIN author ON book.author_id = author.id LEFT JOIN genre ON book.genre_id = genre.id " +
+				"WHERE pages >= $1 AND year_published >= $2 ORDER BY rating DESC LIMIT 10",
+			expect:       []entity.Book{silmarillion},
+			errAssertion: assert.NoError,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
-				rows := sqlmock.NewRows([]string{"id", "title", "year_published", "rating", "pages", "genre_id", "author_id"}).
+				rows := sqlmock.NewRows([]string{"book.id", "book.title", "year_published", "rating", "pages", "author.id", "first_name", "last_name", "genre.id", "genre.title"}).
 					AddRow(silmarillion.ID, silmarillion.Title, silmarillion.YearPublished, silmarillion.Rating,
-						silmarillion.Pages, silmarillion.GenreID, silmarillion.AuthorID)
+						silmarillion.Pages, silmarillion.Author.ID, silmarillion.Author.FirstName, silmarillion.Author.LastName,
+						silmarillion.Genre.ID, silmarillion.Genre.Title)
 				return query.WillReturnRows(rows)
 			},
 		},
@@ -152,13 +155,17 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 				MaxYearPublished: &maxYear,
 				MaxPages:         &maxPages,
 			},
-			expectedQuery: "SELECT * FROM book WHERE pages <= $1 AND year_published <= $2 ORDER BY rating DESC LIMIT 10",
-			expect:        []Book{silmarillion},
-			errAssertion:  assert.NoError,
+			expectedQuery: "SELECT book.id, book.title, year_published, rating, pages, author.id, first_name, " +
+				"last_name, genre.id, genre.title " +
+				"FROM book LEFT JOIN author ON book.author_id = author.id LEFT JOIN genre ON book.genre_id = genre.id " +
+				"WHERE pages <= $1 AND year_published <= $2 ORDER BY rating DESC LIMIT 10",
+			expect:       []entity.Book{silmarillion},
+			errAssertion: assert.NoError,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
-				rows := sqlmock.NewRows([]string{"id", "title", "year_published", "rating", "pages", "genre_id", "author_id"}).
+				rows := sqlmock.NewRows([]string{"book.id", "book.title", "year_published", "rating", "pages", "author.id", "first_name", "last_name", "genre.id", "genre.title"}).
 					AddRow(silmarillion.ID, silmarillion.Title, silmarillion.YearPublished, silmarillion.Rating,
-						silmarillion.Pages, silmarillion.GenreID, silmarillion.AuthorID)
+						silmarillion.Pages, silmarillion.Author.ID, silmarillion.Author.FirstName, silmarillion.Author.LastName,
+						silmarillion.Genre.ID, silmarillion.Genre.Title)
 				return query.WillReturnRows(rows)
 			},
 		},
@@ -167,10 +174,7 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			db, mock := newMock(t)
-			repo := &bookPostgresRepo{db}
-			defer func() {
-				repo.Close()
-			}()
+			repo := &bookRepository{db}
 
 			tt.setQueryExpectations(mock.ExpectQuery(regexp.QuoteMeta(tt.expectedQuery)))
 

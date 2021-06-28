@@ -1,34 +1,31 @@
-package genre
+package postgres
 
 import (
 	"context"
 	"database/sql"
 	"fmt"
 
+	"github.com/LeviMatus/readcommend/service/internal/entity"
 	sq "github.com/Masterminds/squirrel"
-	"github.com/pkg/errors"
 )
 
-type genrePostgresRepo struct {
+type genreRepository struct {
 	db *sql.DB
 }
 
-// Compile-time check to ensure genrePostgresRepo satisfies the Repository interface.
-var _ Repository = (*genrePostgresRepo)(nil)
-
-// NewPostgresRepository accepts a Ptr to a sql.DB. If the Ptr is nil, an error will be thrown.
-// The returned repository interfaces with Postgres as its DB resource.
-func NewPostgresRepository(db *sql.DB) (*genrePostgresRepo, error) {
+func NewGenreRepository(db *sql.DB) (*genreRepository, error) {
 	if db == nil {
-		return nil, errors.New("expected a non-nil db")
+		return nil, ErrInvalidDependency
 	}
 
-	return &genrePostgresRepo{db: db}, nil
+	return &genreRepository{
+		db: db,
+	}, nil
 }
 
 // GetGenres selects all Genres in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
-func (r *genrePostgresRepo) GetGenres(ctx context.Context) ([]Genre, error) {
+func (r *genreRepository) GetGenres(ctx context.Context) ([]entity.Genre, error) {
 	query, _, err := sq.StatementBuilder.
 		Select("*").
 		From("genre").
@@ -43,9 +40,9 @@ func (r *genrePostgresRepo) GetGenres(ctx context.Context) ([]Genre, error) {
 	}
 	defer rows.Close()
 
-	var genres []Genre
+	var genres []entity.Genre
 	for rows.Next() {
-		var genre Genre
+		var genre entity.Genre
 		if err = rows.Scan(&genre.ID, &genre.Title); err != nil {
 			return nil, fmt.Errorf("unable to scan data into a genre: %w", err)
 		}
@@ -56,9 +53,4 @@ func (r *genrePostgresRepo) GetGenres(ctx context.Context) ([]Genre, error) {
 	}
 
 	return genres, nil
-}
-
-// Close terminates the wrapped sql.DB.
-func (r *genrePostgresRepo) Close() error {
-	return r.db.Close()
 }
