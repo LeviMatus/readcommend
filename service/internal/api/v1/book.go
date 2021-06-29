@@ -105,7 +105,9 @@ func NewBookHandler(driver book.Driver) (*bookHandler, error) {
 
 func (b *bookHandler) List(w http.ResponseWriter, r *http.Request) {
 	reqParams, ok := r.Context().Value(bookSearchParamKey).(*BookQueryParams)
-	if !ok {
+
+	// This should have been placed into the context by the GET api/v1/books middleware
+	if !ok || reqParams == nil {
 		http.Error(w, "internal server error", 400)
 		return
 	}

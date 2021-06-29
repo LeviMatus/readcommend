@@ -128,4 +128,22 @@ func TestBookHandler_List(t *testing.T) {
 			assert.Equal(t, tt.expectedBody+"\n", string(body))
 		})
 	}
+
+	t.Run("error when nil not provided", func(t *testing.T) {
+		handler := bookHandler{driver: &driverMock}
+		driverMock.On("SearchBooks",
+			mock.MatchedBy(func(_ context.Context) bool { return true }),
+			book.SearchInput{}).Return([]entity.Book{}, nil)
+
+		req := httptest.
+			NewRequest("GET", "/api/v1/books", nil).
+			WithContext(context.WithValue(context.Background(), bookSearchParamKey, (*BookQueryParams)(nil)))
+
+		w := httptest.NewRecorder()
+		handler.List(w, req)
+		resp := w.Result()
+		body, err := ioutil.ReadAll(resp.Body)
+		assert.NoError(t, err)
+		assert.Equal(t, "internal server error\n", string(body))
+	})
 }
