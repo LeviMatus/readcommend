@@ -76,7 +76,7 @@ func TestServer_Serve(t *testing.T) {
 				AuthorIDs:        []int16{42, 43},
 				Limit:            util.Uint16Ptr(50),
 			},
-			target:      "/api/v1/books?title=The+Silmarillion&max_year=1980&min_year=1970&max_pages=400&min_pages=300&genres=2&genres=6&authors=42&authors=43&limit=50",
+			target:      "/api/v1/books?title=The+Silmarillion&max-year=1980&min-year=1970&max-pages=400&min-pages=300&genres=2&genres=6&authors=42&authors=43&limit=50",
 			expectedErr: nil,
 			expect:      []entity.Book{{}},
 		},

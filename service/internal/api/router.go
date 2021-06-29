@@ -36,7 +36,7 @@ func New(driver driver.Driver, config config.API) (*Server, error) {
 		render.SetContentType(render.ContentTypeJSON),
 	)
 
-	v1Router, err := v1.NewRouter(driver, config)
+	v1Router, err := v1.NewRouter(driver)
 	if err != nil {
 		return nil, err
 	}
