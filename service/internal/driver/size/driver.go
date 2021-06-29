@@ -14,6 +14,6 @@ func NewDriver(r Repository) *driver {
 	return &driver{repository: r}
 }
 
-func (d *driver) List(ctx context.Context) ([]entity.Size, error) {
+func (d *driver) ListSizes(ctx context.Context) ([]entity.Size, error) {
 	return d.repository.List(ctx)
 }

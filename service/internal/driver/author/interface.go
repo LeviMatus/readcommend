@@ -11,5 +11,5 @@ type Repository interface {
 }
 
 type Driver interface {
-	ListAuthors(ctx context.Context)
+	ListAuthors(ctx context.Context) ([]entity.Author, error)
 }

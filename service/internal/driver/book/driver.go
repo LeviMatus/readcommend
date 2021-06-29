@@ -14,7 +14,6 @@ type SearchInput struct {
 	MinYearPublished *int16
 	MaxPages         *int16
 	MinPages         *int16
-	Rating           *float32
 	GenreIDs         []int16
 	AuthorIDs        []int16
 	Limit            *uint64
@@ -28,6 +27,6 @@ func NewDriver(r Repository) *driver {
 	return &driver{repository: r}
 }
 
-func (d *driver) Search(ctx context.Context, params SearchInput) ([]entity.Book, error) {
+func (d *driver) SearchBooks(ctx context.Context, params SearchInput) ([]entity.Book, error) {
 	return d.repository.Search(ctx, params)
 }

@@ -14,6 +14,6 @@ func NewDriver(r Repository) *driver {
 	return &driver{repository: r}
 }
 
-func (d *driver) List(ctx context.Context) ([]entity.Genre, error) {
+func (d *driver) ListGenres(ctx context.Context) ([]entity.Genre, error) {
 	return d.repository.List(ctx)
 }

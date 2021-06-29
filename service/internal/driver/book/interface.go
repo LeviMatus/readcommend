@@ -11,5 +11,5 @@ type Repository interface {
 }
 
 type Driver interface {
-	SearchBooks(ctx context.Context, params SearchInput)
+	SearchBooks(ctx context.Context, params SearchInput) ([]entity.Book, error)
 }

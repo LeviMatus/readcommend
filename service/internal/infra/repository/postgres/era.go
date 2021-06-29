@@ -11,7 +11,8 @@ import (
 )
 
 type Era struct {
-	entity.Era
+	ID      int32
+	Title   string
 	MinYear encoding.NullInt16
 	MaxYear encoding.NullInt16
 }
@@ -25,17 +26,18 @@ func (e Era) toEraEntity() entity.Era {
 	if val, _ := e.MinYear.Value(); val == nil {
 		min = nil
 	} else {
-		min = &e.MaxYear.Int16
+		min = &e.MinYear.Int16
 	}
 
 	if val, _ := e.MaxYear.Value(); val == nil {
-		min = nil
+		max = nil
 	} else {
 		max = &e.MaxYear.Int16
 	}
 
 	return entity.Era{
 		ID:      e.ID,
+		Title:   e.Title,
 		MinYear: min,
 		MaxYear: max,
 	}
@@ -74,11 +76,11 @@ func (r *eraRepository) List(ctx context.Context) ([]entity.Era, error) {
 
 	var eras []entity.Era
 	for rows.Next() {
-		var era entity.Era
+		var era Era
 		if err = rows.Scan(&era.ID, &era.Title, &era.MinYear, &era.MaxYear); err != nil {
 			return nil, fmt.Errorf("unable to scan data into era: %w", err)
 		}
-		eras = append(eras, era)
+		eras = append(eras, era.toEraEntity())
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err

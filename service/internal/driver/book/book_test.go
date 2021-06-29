@@ -43,7 +43,7 @@ func TestDriver_Search(t *testing.T) {
 	repo := inMemoryRepository{resource: map[int32]entity.Book{1: b}}
 
 	driver := book.NewDriver(&repo)
-	res, err := driver.Search(context.Background(), book.SearchInput{})
+	res, err := driver.SearchBooks(context.Background(), book.SearchInput{})
 	assert.NoError(t, err)
 	assert.Len(t, res, 1)
 	assert.Contains(t, res, b)

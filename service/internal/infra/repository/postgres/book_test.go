@@ -47,17 +47,16 @@ func TestNewBookRepository(t *testing.T) {
 func TestBookPostgresRepo_GetBooks(t *testing.T) {
 
 	var (
-		title                 = "The Silmarillion"
-		maxYear       int16   = 1980
-		minYear       int16   = 1970
-		rating        float32 = 3.9
-		maxPages      int16   = 400
-		minPages      int16   = 300
-		fantasyGenre  int16   = 2
-		fictionGenre  int16   = 7
-		johnID        int16   = 42
-		christopherID int16   = 43
-		limit         uint64  = 25
+		title                = "The Silmarillion"
+		maxYear       int16  = 1980
+		minYear       int16  = 1970
+		maxPages      int16  = 400
+		minPages      int16  = 300
+		fantasyGenre  int16  = 2
+		fictionGenre  int16  = 7
+		johnID        int16  = 42
+		christopherID int16  = 43
+		limit         uint64 = 25
 
 		silmarillion = entity.Book{
 			ID:            1000,
@@ -112,7 +111,6 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 				MinYearPublished: &minYear,
 				MaxPages:         &maxPages,
 				MinPages:         &minPages,
-				Rating:           &rating,
 				GenreIDs:         []int16{fantasyGenre, fictionGenre},
 				AuthorIDs:        []int16{johnID, christopherID},
 				Limit:            &limit,
@@ -120,8 +118,8 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 			expectedQuery: "SELECT book.id, book.title, year_published, rating, pages, author.id, first_name, " +
 				"last_name, genre.id, genre.title " +
 				"FROM book LEFT JOIN author ON book.author_id = author.id LEFT JOIN genre ON book.genre_id = genre.id " +
-				"WHERE author_id IN ($1,$2) AND genre_id IN ($3,$4) AND title = $5 AND rating = $6 AND pages >= $7 " +
-				"AND pages <= $8 AND year_published >= $9 AND year_published <= $10 ORDER BY rating DESC LIMIT 25",
+				"WHERE author_id IN ($1,$2) AND genre_id IN ($3,$4) AND book.title = $5 AND pages >= $6 " +
+				"AND pages <= $7 AND year_published >= $8 AND year_published <= $9 ORDER BY rating DESC LIMIT 25",
 			expect:       []entity.Book{silmarillion},
 			errAssertion: assert.NoError,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {

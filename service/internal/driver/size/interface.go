@@ -11,5 +11,5 @@ type Repository interface {
 }
 
 type Driver interface {
-	ListSizes(ctx context.Context)
+	ListSizes(ctx context.Context) ([]entity.Size, error)
 }
