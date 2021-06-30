@@ -107,6 +107,6 @@ func TestServer_Serve(t *testing.T) {
 		testServer := httptest.NewServer(apiServer.mux)
 		response, err := testServer.Client().Head(fmt.Sprintf("%s/api/v1/books", testServer.URL))
 		assert.NoError(t, err)
-		assert.Equal(t, 405, response.StatusCode)
+		assert.Equal(t, 400, response.StatusCode)
 	})
 }
