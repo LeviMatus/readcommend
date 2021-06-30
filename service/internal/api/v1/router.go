@@ -38,7 +38,7 @@ func NewRouter(driver driver.Driver) (*chi.Mux, error) {
 	r.Mount("/books", bookRoutes(bookHandler))
 	r.Mount("/authors", authorRoutes(authorHandler))
 	r.Mount("/genres", genreRoutes(genreHandler))
-	r.Mount("/era", eraRoutes(eraHandler))
+	r.Mount("/eras", eraRoutes(eraHandler))
 	r.Mount("/sizes", sizeRoutes(sizeHandler))
 
 	return r, nil
