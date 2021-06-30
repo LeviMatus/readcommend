@@ -75,7 +75,7 @@ func TestAuthorHandler_List(t *testing.T) {
 			expectedHandler: "ListAuthors",
 			target:          "/",
 			driverReturn:    []entity.Author{mockAuthor},
-			expectedBody:    "HTTP method POST is not allowed",
+			expectedBody:    `{"message":"HTTP method POST is not allowed"}`,
 			expectedCode:    400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Post(url, "application/json", nil)
@@ -85,7 +85,7 @@ func TestAuthorHandler_List(t *testing.T) {
 			expectedHandler: "ListAuthors",
 			target:          "/",
 			driverReturn:    []entity.Author{},
-			expectedBody:    "internal server error",
+			expectedBody:    `{"message":"Internal Server Error"}`,
 			expectedCode:    400,
 			expectedErr:     errors.New("mock error returned from driver"),
 			sendRequest: func(url string) (*http.Response, error) {

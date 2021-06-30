@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/LeviMatus/readcommend/service/internal/driver/author"
@@ -19,7 +18,8 @@ func authorRoutes(h *authorHandler) chi.Router {
 			cors.Handler(cors.Options{AllowedMethods: []string{"GET"}}),
 		)
 		r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, fmt.Sprintf("HTTP method %s is not allowed", r.Method), 400)
+			_ = render.Render(w, r, ErrMethodNotAllowed(r.Method))
+			return
 		})
 		r.Get("/", h.List)
 	})
@@ -46,7 +46,7 @@ func NewAuthorHandler(driver author.Driver) (*authorHandler, error) {
 func (a *authorHandler) List(w http.ResponseWriter, r *http.Request) {
 	authors, err := a.driver.ListAuthors(r.Context())
 	if err != nil {
-		http.Error(w, "internal server error", 400)
+		_ = render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 

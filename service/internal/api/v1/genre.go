@@ -1,7 +1,6 @@
 package v1
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/LeviMatus/readcommend/service/internal/driver/genre"
@@ -19,7 +18,7 @@ func genreRoutes(h *genreHandler) chi.Router {
 			cors.Handler(cors.Options{AllowedMethods: []string{"GET"}}),
 		)
 		r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, fmt.Sprintf("HTTP method %s is not allowed", r.Method), 400)
+			_ = render.Render(w, r, ErrMethodNotAllowed(r.Method))
 		})
 		r.Get("/", h.List)
 	})
@@ -46,7 +45,7 @@ func NewGenreHandler(driver genre.Driver) (*genreHandler, error) {
 func (handler *genreHandler) List(w http.ResponseWriter, r *http.Request) {
 	genres, err := handler.driver.ListGenres(r.Context())
 	if err != nil {
-		http.Error(w, "internal server error", 400)
+		_ = render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 
