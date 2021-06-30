@@ -5,13 +5,13 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 
 	"github.com/LeviMatus/readcommend/service/internal/driver"
 	"github.com/LeviMatus/readcommend/service/internal/driver/book"
 	"github.com/LeviMatus/readcommend/service/internal/driver/drivertest"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
-	"github.com/LeviMatus/readcommend/service/pkg/config"
 	"github.com/LeviMatus/readcommend/service/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
@@ -20,27 +20,40 @@ import (
 func TestNew(t *testing.T) {
 
 	tests := map[string]struct {
-		input        driver.Driver
-		config       config.API
-		errAssertion assert.ErrorAssertionFunc
-		valAssertion assert.ValueAssertionFunc
+		input          driver.Driver
+		expectedRoutes []string
+		errAssertion   assert.ErrorAssertionFunc
+		valAssertion   assert.ValueAssertionFunc
 	}{
 		"code contract not met - nil driver": {
 			errAssertion: assert.Error,
 			valAssertion: assert.Nil,
 		},
 		"create server": {
-			input:        &drivertest.DriverMock{},
-			errAssertion: assert.NoError,
-			valAssertion: assert.NotNil,
+			input:          &drivertest.DriverMock{},
+			expectedRoutes: []string{"api"},
+			errAssertion:   assert.NoError,
+			valAssertion:   assert.NotNil,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			server, err := New(tt.input, tt.config)
+			server, err := New(tt.input)
 			tt.errAssertion(t, err)
 			tt.valAssertion(t, server)
+			if server != nil {
+				var foundPatterns = map[string]struct{}{}
+				for _, pattern := range tt.expectedRoutes {
+					for _, subroute := range server.mux.Routes() {
+						if strings.Contains(subroute.Pattern, pattern) {
+							foundPatterns[pattern] = struct{}{}
+						}
+					}
+					_, found := foundPatterns[pattern]
+					assert.True(t, found)
+				}
+			}
 		})
 	}
 }
@@ -49,7 +62,6 @@ func TestServer_Serve(t *testing.T) {
 
 	tests := map[string]struct {
 		input           *drivertest.DriverMock
-		config          config.API
 		expectedHandler string
 		expectedParams  book.SearchInput
 		target          string
@@ -84,7 +96,7 @@ func TestServer_Serve(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			apiServer, err := New(tt.input, tt.config)
+			apiServer, err := New(tt.input)
 			assert.NoError(t, err)
 			assert.NotNil(t, apiServer)
 
@@ -101,7 +113,7 @@ func TestServer_Serve(t *testing.T) {
 
 	t.Run("invalid HTTP method", func(t *testing.T) {
 		dbDriver := drivertest.DriverMock{}
-		apiServer, err := New(&dbDriver, config.API{})
+		apiServer, err := New(&dbDriver)
 		assert.NoError(t, err)
 		assert.NotNil(t, apiServer)
 		testServer := httptest.NewServer(apiServer.mux)

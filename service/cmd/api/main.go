@@ -85,7 +85,7 @@ func main() {
 		era.NewDriver(eraRepo),
 		book.NewDriver(bookRepo))
 
-	r, err := api.New(d, cfg.API)
+	r, err := api.New(d)
 	if err != nil {
 		log.Fatal(err)
 	}
