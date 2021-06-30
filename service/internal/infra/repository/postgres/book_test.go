@@ -93,7 +93,7 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 		"successful get authors with no parameters": {
 			expectedQuery: "SELECT book.id, book.title, year_published, rating, pages, author.id, first_name, " +
 				"last_name, genre.id, genre.title FROM book LEFT JOIN author ON book.author_id = author.id " +
-				"LEFT JOIN genre ON book.genre_id = genre.id ORDER BY rating DESC LIMIT 10",
+				"LEFT JOIN genre ON book.genre_id = genre.id ORDER BY rating DESC",
 			expect:       []entity.Book{silmarillion},
 			errAssertion: assert.NoError,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
@@ -138,7 +138,7 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 			expectedQuery: "SELECT book.id, book.title, year_published, rating, pages, author.id, first_name, " +
 				"last_name, genre.id, genre.title " +
 				"FROM book LEFT JOIN author ON book.author_id = author.id LEFT JOIN genre ON book.genre_id = genre.id " +
-				"WHERE pages >= $1 AND year_published >= $2 ORDER BY rating DESC LIMIT 10",
+				"WHERE pages >= $1 AND year_published >= $2 ORDER BY rating DESC",
 			expect:       []entity.Book{silmarillion},
 			errAssertion: assert.NoError,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
@@ -157,7 +157,7 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 			expectedQuery: "SELECT book.id, book.title, year_published, rating, pages, author.id, first_name, " +
 				"last_name, genre.id, genre.title " +
 				"FROM book LEFT JOIN author ON book.author_id = author.id LEFT JOIN genre ON book.genre_id = genre.id " +
-				"WHERE pages <= $1 AND year_published <= $2 ORDER BY rating DESC LIMIT 10",
+				"WHERE pages <= $1 AND year_published <= $2 ORDER BY rating DESC",
 			expect:       []entity.Book{silmarillion},
 			errAssertion: assert.NoError,
 			setQueryExpectations: func(query *sqlmock.ExpectedQuery) *sqlmock.ExpectedQuery {
