@@ -9,6 +9,8 @@ import (
 	"github.com/LeviMatus/readcommend/service/internal/driver/book"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/LeviMatus/readcommend/service/pkg/util"
+	"github.com/go-chi/chi/v5"
+	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
 	"github.com/gorilla/schema"
 	"github.com/pkg/errors"
@@ -22,6 +24,21 @@ const (
 
 	bookSearchParamKey = "book-search-params"
 )
+
+func bookRoutes(h *bookHandler) chi.Router {
+	r := chi.NewRouter()
+	r.Route("/", func(r chi.Router) {
+		r.Use(
+			cors.Handler(cors.Options{AllowedMethods: []string{"GET"}}),
+			ValidateGetBookParams,
+		)
+		r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
+			http.Error(w, fmt.Sprintf("HTTP method %s is not allowed", r.Method), 400)
+		})
+		r.Get("/", h.List)
+	})
+	return r
+}
 
 type BookQueryParams struct {
 	_ struct{}
@@ -60,6 +77,7 @@ func ValidateGetBookParams(next http.Handler) http.Handler {
 				switch v.(type) {
 				case schema.ConversionError:
 					http.Error(w, fmt.Sprintf("%s: recieved wrong type for parameter %s", entity.ErrInvalidQueryParam, k), 400)
+					return
 				case schema.UnknownKeyError:
 					log.Println("WARN: " + err.Error())
 				}
@@ -81,8 +99,13 @@ func ValidateGetBookParams(next http.Handler) http.Handler {
 			return
 		}
 
+		if queryParams.MaxYearPublished != nil && !util.Int16InRange(*queryParams.MaxYearPublished, minimumYearParam, maximumYearParam) {
+			http.Error(w, fmt.Sprintf("%s: max-year is %d but should be in range [%d,%d]", entity.ErrInvalidQueryParam, *queryParams.MaxYearPublished, minimumYearParam, maximumYearParam), 400)
+			return
+		}
+
 		if queryParams.Limit != nil && *queryParams.Limit < 1 {
-			http.Error(w, fmt.Sprintf("%s: lmiit is %d but should be in greater than 0", entity.ErrInvalidQueryParam, *queryParams.Limit), 400)
+			http.Error(w, fmt.Sprintf("%s: limit is %d but should be greater than 0", entity.ErrInvalidQueryParam, *queryParams.Limit), 400)
 			return
 		}
 

@@ -35,16 +35,7 @@ func NewRouter(driver driver.Driver) (*chi.Mux, error) {
 
 	r := chi.NewRouter()
 
-	r.Mount("/books", func() http.Handler {
-		br := chi.NewRouter()
-		br.Use(
-			cors.Handler(cors.Options{AllowedMethods: []string{"GET"}}),
-			ValidateGetBookParams,
-		)
-		br.Get("/", bookHandler.List)
-		return br
-	}())
-
+	r.Mount("/books", bookRoutes(bookHandler))
 	r.Mount("/authors", authorRoutes(authorHandler))
 	r.Mount("/genres", genreRoutes(genreHandler))
 	r.Mount("/era", eraRoutes(eraHandler))
