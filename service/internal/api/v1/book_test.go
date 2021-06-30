@@ -13,6 +13,7 @@ import (
 	"github.com/LeviMatus/readcommend/service/internal/driver/drivertest"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/LeviMatus/readcommend/service/pkg/util"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -45,8 +46,6 @@ func TestNewBookHandler(t *testing.T) {
 }
 
 func TestBookHandler_List(t *testing.T) {
-	driverMock := drivertest.DriverMock{}
-
 	expectedJson := `[{"id":1,"title":"The Silmarillion","yearPublished":1977,"rating":3.9,"pages":365,"genre":{"id":2,"title":"Fantasy/SciFi"},"author":{"id":42,"firstName":"John","lastName":"Tolkien"}}]`
 
 	mockBook := entity.Book{
@@ -70,10 +69,11 @@ func TestBookHandler_List(t *testing.T) {
 		target          string
 		expectedParams  book.SearchInput
 		driverReturn    []entity.Book
-		sendRequest     func(string) (*http.Response, error)
 		expectedHandler string
 		expectedBody    string
 		expectedCode    int
+		expectedErr     error
+		sendRequest     func(string) (*http.Response, error)
 	}{
 		"search all books": {
 			expectedHandler: "SearchBooks",
@@ -84,6 +84,17 @@ func TestBookHandler_List(t *testing.T) {
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Get(url)
 			},
+		},
+		"driver returns error": {
+			expectedHandler: "SearchBooks",
+			target:          "/",
+			driverReturn:    []entity.Book{mockBook},
+			expectedBody:    "internal server error",
+			expectedCode:    400,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
+			expectedErr: errors.New("mock internal error from driver"),
 		},
 		"search for specific books": {
 			expectedHandler: "SearchBooks",
@@ -174,6 +185,7 @@ func TestBookHandler_List(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
+			driverMock := drivertest.DriverMock{}
 			handler := bookHandler{driver: &driverMock}
 
 			r := bookRoutes(&handler)
@@ -183,10 +195,11 @@ func TestBookHandler_List(t *testing.T) {
 
 			driverMock.
 				On(tt.expectedHandler, mock.MatchedBy(func(_ context.Context) bool { return true }), tt.expectedParams).
-				Return(tt.driverReturn, nil)
+				Return(tt.driverReturn, tt.expectedErr)
 
 			resp, err := tt.sendRequest(fmt.Sprintf("%s%s", server.URL, tt.target))
 			assert.NoError(t, err)
+			defer resp.Body.Close()
 
 			body, err := ioutil.ReadAll(resp.Body)
 			assert.NoError(t, err)
@@ -196,6 +209,7 @@ func TestBookHandler_List(t *testing.T) {
 	}
 
 	t.Run("error when nil not provided", func(t *testing.T) {
+		driverMock := drivertest.DriverMock{}
 		handler := bookHandler{driver: &driverMock}
 		driverMock.On("SearchBooks",
 			mock.MatchedBy(func(_ context.Context) bool { return true }),

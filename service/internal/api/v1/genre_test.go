@@ -2,6 +2,7 @@ package v1
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io/ioutil"
 	"net/http"
@@ -43,8 +44,6 @@ func TestNewGenreHandler(t *testing.T) {
 }
 
 func TestGenreHandler_List(t *testing.T) {
-	driverMock := drivertest.DriverMock{}
-
 	expectedJson := `[{"id":1,"title":"Fantasy/SciFy"}]`
 
 	mockGenre := entity.Genre{
@@ -55,32 +54,48 @@ func TestGenreHandler_List(t *testing.T) {
 	tests := map[string]struct {
 		target          string
 		driverReturn    []entity.Genre
-		sendRequest     func(string) (*http.Response, error)
 		expectedHandler string
 		expectedBody    string
+		expectedCode    int
+		expectedErr     error
+		sendRequest     func(string) (*http.Response, error)
 	}{
 		"search all genres": {
 			expectedHandler: "ListGenres",
 			target:          "/",
+			driverReturn:    []entity.Genre{mockGenre},
+			expectedBody:    expectedJson,
+			expectedCode:    200,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Get(url)
 			},
-			driverReturn: []entity.Genre{mockGenre},
-			expectedBody: expectedJson,
 		},
 		"invalid http method": {
 			expectedHandler: "ListGenres",
 			target:          "/",
+			driverReturn:    []entity.Genre{mockGenre},
+			expectedBody:    "HTTP method POST is not allowed",
+			expectedCode:    400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Post(url, "application/json", nil)
 			},
-			driverReturn: []entity.Genre{mockGenre},
-			expectedBody: "HTTP method POST is not allowed",
+		},
+		"driver returns error": {
+			expectedHandler: "ListGenres",
+			target:          "/",
+			driverReturn:    []entity.Genre{},
+			expectedBody:    "internal server error",
+			expectedCode:    400,
+			expectedErr:     errors.New("mock error returned from driver"),
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
+			driverMock := drivertest.DriverMock{}
 			handler := genreHandler{driver: &driverMock}
 
 			r := genreRoutes(&handler)
@@ -90,13 +105,14 @@ func TestGenreHandler_List(t *testing.T) {
 
 			driverMock.
 				On(tt.expectedHandler, mock.MatchedBy(func(_ context.Context) bool { return true })).
-				Return(tt.driverReturn, nil)
+				Return(tt.driverReturn, tt.expectedErr)
 
 			resp, err := tt.sendRequest(fmt.Sprintf("%s%s", server.URL, tt.target))
 			assert.NoError(t, err)
 
 			body, err := ioutil.ReadAll(resp.Body)
 			assert.NoError(t, err)
+			assert.Equal(t, tt.expectedCode, resp.StatusCode)
 			assert.Equal(t, tt.expectedBody+"\n", string(body))
 		})
 	}
