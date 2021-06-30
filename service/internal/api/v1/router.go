@@ -2,11 +2,9 @@ package v1
 
 import (
 	"fmt"
-	"net/http"
 
 	"github.com/LeviMatus/readcommend/service/internal/driver"
 	"github.com/go-chi/chi/v5"
-	"github.com/go-chi/cors"
 )
 
 func NewRouter(driver driver.Driver) (*chi.Mux, error) {
@@ -14,19 +12,34 @@ func NewRouter(driver driver.Driver) (*chi.Mux, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
 	}
+
+	authorHandler, err := NewAuthorHandler(driver)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
+	}
+
+	genreHandler, err := NewGenreHandler(driver)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
+	}
+
+	eraHandler, err := NewEraHandler(driver)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
+	}
+
+	sizeHandler, err := NewSizeHandler(driver)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
+	}
+
 	r := chi.NewRouter()
 
-	r.Route("/", func(r chi.Router) {
-		r.Mount("/books", func() http.Handler {
-			br := chi.NewRouter()
-			br.Use(
-				cors.Handler(cors.Options{AllowedMethods: []string{"GET"}}),
-				ValidateGetBookParams,
-			)
-			br.Get("/", bookHandler.List)
-			return br
-		}())
-	})
+	r.Mount("/books", bookRoutes(bookHandler))
+	r.Mount("/authors", authorRoutes(authorHandler))
+	r.Mount("/genres", genreRoutes(genreHandler))
+	r.Mount("/eras", eraRoutes(eraHandler))
+	r.Mount("/sizes", sizeRoutes(sizeHandler))
 
 	return r, nil
 }

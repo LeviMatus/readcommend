@@ -2,7 +2,9 @@ package v1
 
 import (
 	"context"
+	"fmt"
 	"io/ioutil"
+	"net/http"
 	"net/http/httptest"
 	"testing"
 
@@ -10,8 +12,8 @@ import (
 	"github.com/LeviMatus/readcommend/service/internal/driver/book"
 	"github.com/LeviMatus/readcommend/service/internal/driver/drivertest"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
-	"github.com/LeviMatus/readcommend/service/pkg/config"
 	"github.com/LeviMatus/readcommend/service/pkg/util"
+	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
 )
@@ -44,8 +46,6 @@ func TestNewBookHandler(t *testing.T) {
 }
 
 func TestBookHandler_List(t *testing.T) {
-	driverMock := drivertest.DriverMock{}
-
 	expectedJson := `[{"id":1,"title":"The Silmarillion","yearPublished":1977,"rating":3.9,"pages":365,"genre":{"id":2,"title":"Fantasy/SciFi"},"author":{"id":42,"firstName":"John","lastName":"Tolkien"}}]`
 
 	mockBook := entity.Book{
@@ -69,18 +69,36 @@ func TestBookHandler_List(t *testing.T) {
 		target          string
 		expectedParams  book.SearchInput
 		driverReturn    []entity.Book
-		config          config.API
 		expectedHandler string
 		expectedBody    string
+		expectedCode    int
+		expectedErr     error
+		sendRequest     func(string) (*http.Response, error)
 	}{
 		"search all books": {
 			expectedHandler: "SearchBooks",
-			target:          "/api/v1/books",
+			target:          "/",
 			driverReturn:    []entity.Book{mockBook},
 			expectedBody:    expectedJson,
+			expectedCode:    200,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
+		},
+		"driver returns error": {
+			expectedHandler: "SearchBooks",
+			target:          "/",
+			driverReturn:    []entity.Book{mockBook},
+			expectedBody:    "internal server error",
+			expectedCode:    400,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
+			expectedErr: errors.New("mock internal error from driver"),
 		},
 		"search for specific books": {
 			expectedHandler: "SearchBooks",
+			target:          "/?title=The+Silmarillion&max-year=1980&min-year=1970&max-pages=400&min-pages=300&genres=2&genres=6&authors=42&authors=43&limit=50",
 			expectedParams: book.SearchInput{
 				Title:            util.StringPtr("The Silmarillion"),
 				MaxYearPublished: util.Int16Ptr(1980),
@@ -91,52 +109,114 @@ func TestBookHandler_List(t *testing.T) {
 				AuthorIDs:        []int16{42, 43},
 				Limit:            util.Uint16Ptr(50),
 			},
-			target:       "/api/v1/books?title=The+Silmarillion&max_year=1980&min_year=1970&max_pages=400&min_pages=300&genres=2&genres=6&authors=42&authors=43&limit=50",
 			driverReturn: []entity.Book{mockBook},
 			expectedBody: expectedJson,
+			expectedCode: 200,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
+		},
+		"invalid http method": {
+			expectedHandler: "ListAuthors",
+			target:          "/",
+			expectedBody:    "HTTP method POST is not allowed",
+			expectedCode:    400,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Post(url, "application/json", nil)
+			},
+		},
+		"invalid books param - min-pages": {
+			target:       "/?min-pages=0",
+			expectedBody: "invalid URL query parameter provided: min-pages is 0 but should be in range [1,10000]",
+			expectedCode: 400,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
+		},
+		"invalid books param - max-pages": {
+			target:       "/?max-pages=10001",
+			expectedBody: "invalid URL query parameter provided: max-pages is 10001 but should be in range [1,10000]",
+			expectedCode: 400,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
+		},
+		"invalid books param - min-year": {
+			target:       "/?min-year=1799",
+			expectedBody: "invalid URL query parameter provided: min-year is 1799 but should be in range [1800,2100]",
+			expectedCode: 400,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
+		},
+		"invalid books param - max-year": {
+			target:       "/?max-year=2101",
+			expectedBody: "invalid URL query parameter provided: max-year is 2101 but should be in range [1800,2100]",
+			expectedCode: 400,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
+		},
+		"invalid books param - limit": {
+			target:       "/?limit=0",
+			expectedBody: "invalid URL query parameter provided: limit is 0 but should be greater than 0",
+			expectedCode: 400,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
+		},
+		"invalid books param - authors": {
+			target:       "/books?authors=1,beta,3",
+			expectedBody: "invalid URL query parameter provided: recieved wrong type for parameter authors",
+			expectedCode: 400,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
+		},
+		"invalid books param - genres": {
+			target:       "/books?genres=1,beta,3",
+			expectedBody: "invalid URL query parameter provided: recieved wrong type for parameter genres",
+			expectedCode: 400,
+			sendRequest: func(url string) (*http.Response, error) {
+				return http.Get(url)
+			},
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
+			driverMock := drivertest.DriverMock{}
 			handler := bookHandler{driver: &driverMock}
 
-			driverMock.On(tt.expectedHandler,
-				mock.MatchedBy(func(_ context.Context) bool { return true }),
-				tt.expectedParams).Return(tt.driverReturn, nil)
+			r := bookRoutes(&handler)
 
-			req := httptest.
-				NewRequest("GET", tt.target, nil).
-				WithContext(context.WithValue(context.Background(), bookSearchParamKey, &BookQueryParams{
-					Title:            tt.expectedParams.Title,
-					MaxYearPublished: tt.expectedParams.MaxYearPublished,
-					MinYearPublished: tt.expectedParams.MinYearPublished,
-					MaxPages:         tt.expectedParams.MaxPages,
-					MinPages:         tt.expectedParams.MinPages,
-					GenreIDs:         tt.expectedParams.GenreIDs,
-					AuthorIDs:        tt.expectedParams.AuthorIDs,
-					Limit:            tt.expectedParams.Limit,
-				}))
+			server := httptest.NewServer(r)
+			defer server.Close()
 
-			w := httptest.NewRecorder()
+			driverMock.
+				On(tt.expectedHandler, mock.MatchedBy(func(_ context.Context) bool { return true }), tt.expectedParams).
+				Return(tt.driverReturn, tt.expectedErr)
 
-			handler.List(w, req)
+			resp, err := tt.sendRequest(fmt.Sprintf("%s%s", server.URL, tt.target))
+			assert.NoError(t, err)
+			defer resp.Body.Close()
 
-			resp := w.Result()
 			body, err := ioutil.ReadAll(resp.Body)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expectedBody+"\n", string(body))
+			assert.Equal(t, tt.expectedCode, resp.StatusCode)
 		})
 	}
 
 	t.Run("error when nil not provided", func(t *testing.T) {
+		driverMock := drivertest.DriverMock{}
 		handler := bookHandler{driver: &driverMock}
 		driverMock.On("SearchBooks",
 			mock.MatchedBy(func(_ context.Context) bool { return true }),
 			book.SearchInput{}).Return([]entity.Book{}, nil)
 
 		req := httptest.
-			NewRequest("GET", "/api/v1/books", nil).
+			NewRequest("GET", "/", nil).
 			WithContext(context.WithValue(context.Background(), bookSearchParamKey, (*BookQueryParams)(nil)))
 
 		w := httptest.NewRecorder()

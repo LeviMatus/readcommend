@@ -6,7 +6,6 @@ import (
 
 	v1 "github.com/LeviMatus/readcommend/service/internal/api/v1"
 	"github.com/LeviMatus/readcommend/service/internal/driver"
-	"github.com/LeviMatus/readcommend/service/pkg/config"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
@@ -20,7 +19,7 @@ type Server struct {
 	port string
 }
 
-func New(driver driver.Driver, config config.API) (*Server, error) {
+func New(driver driver.Driver) (*Server, error) {
 	if driver == nil {
 		return nil, errors.New("a non-nil driver is required")
 	}
