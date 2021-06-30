@@ -25,6 +25,41 @@ func sizeRoutes(h *sizeHandler) chi.Router {
 	return r
 }
 
+/**********************************************************
+ * Request and Response payloads/models for the REST api.
+ **********************************************************/
+
+// SizeResponse is the response struct sent back to the client.
+// Currently it embeds a pointer to entity.Size. In the future it would be
+// possible to separate the two models and perform mapping if necessary.
+type SizeResponse struct {
+	entity.Size
+}
+
+// newBookResponse accepts a pointer to an entity.Book and returns it embedded
+// into a BookResponse.
+func newSizeResponse(size entity.Size) *SizeResponse {
+	return &SizeResponse{Size: size}
+}
+
+// Render is a stub for preprocessing the BookResponse model. In the future it may
+// be necessary to add some further data handling in here.
+func (br *SizeResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
+
+func newSizeListResponse(sizes []entity.Size) []render.Renderer {
+	out := make([]render.Renderer, len(sizes))
+	for i, s := range sizes {
+		out[i] = newSizeResponse(s)
+	}
+	return out
+}
+
+/*****************************
+ * v1 Size endpoint handlers
+ *****************************/
+
 // sizeHandler is used to wrap an size.Driver. This can be used by the API to
 // drive the usecases powered by the driver.
 type sizeHandler struct {
@@ -49,19 +84,8 @@ func (handler *sizeHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// An adaptor between the service layer and persistence layer
-	// wouldn't be out of the question, but the conversion is very simple
-	// so I'll just do it directly here. In the future, abstracting this
-	// may be appropriate.
-	var out = make([]entity.Size, len(sizes))
-	for i, e := range sizes {
-		out[i] = entity.Size{
-			ID:       e.ID,
-			Title:    e.Title,
-			MinPages: e.MinPages,
-			MaxPages: e.MaxPages,
-		}
+	if err := render.RenderList(w, r, newSizeListResponse(sizes)); err != nil {
+		_ = render.Render(w, r, ErrInternalServer(err))
+		return
 	}
-
-	render.JSON(w, r, out)
 }
