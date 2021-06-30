@@ -217,7 +217,7 @@ func TestBookHandler_List(t *testing.T) {
 
 		req := httptest.
 			NewRequest("GET", "/", nil).
-			WithContext(context.WithValue(context.Background(), bookSearchParamKey, (*BookQueryParams)(nil)))
+			WithContext(context.WithValue(context.Background(), bookSearchParamKey, (*BookRequest)(nil)))
 
 		w := httptest.NewRecorder()
 		handler.List(w, req)

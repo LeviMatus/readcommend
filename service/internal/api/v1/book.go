@@ -30,7 +30,7 @@ func bookRoutes(h *bookHandler) chi.Router {
 	r.Route("/", func(r chi.Router) {
 		r.Use(
 			cors.Handler(cors.Options{AllowedMethods: []string{"GET"}}),
-			ValidateGetBookParams,
+			ValidateBookRequest,
 		)
 		r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
 			_ = render.Render(w, r, ErrMethodNotAllowed(r.Method))
@@ -41,7 +41,7 @@ func bookRoutes(h *bookHandler) chi.Router {
 	return r
 }
 
-type BookQueryParams struct {
+type BookRequest struct {
 	_ struct{}
 
 	Title            *string `schema:"title"`
@@ -54,21 +54,21 @@ type BookQueryParams struct {
 	Limit            *uint64 `schema:"limit"`
 }
 
-// ValidateGetBookParams maps the query parameters to a BookQueryParams struct, which is injected
-// into the context of the request. As a part of this process, BookQueryParams.GenreIDs and
-// BookQueryParams.AuthorIDs are validated. If a string, such as "alpha" appears in the incoming string list,
+// ValidateBookRequest maps the query parameters to a BookRequest struct, which is injected
+// into the context of the request. As a part of this process, BookRequest.GenreIDs and
+// BookRequest.AuthorIDs are validated. If a string, such as "alpha" appears in the incoming string list,
 // then then validation fails and a 400 StatusCode code is returned.
 //
-// Following this, the resulting BookQueryParams is validated. If any search criteria fail validation, then
+// Following this, the resulting BookRequest is validated. If any search criteria fail validation, then
 // the routine returns a 400 StatusCode code and error message.
-func ValidateGetBookParams(next http.Handler) http.Handler {
+func ValidateBookRequest(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
 			_ = render.Render(w, r, ErrBadRequest(fmt.Errorf("an unexpected error occurred: %w", err)))
 			return
 		}
 
-		queryParams := new(BookQueryParams)
+		queryParams := new(BookRequest)
 		if err := schema.NewDecoder().Decode(queryParams, r.Form); err != nil {
 			var schemaErr schema.MultiError
 			if !errors.As(err, &schemaErr) {
@@ -152,7 +152,7 @@ func NewBookHandler(driver book.Driver) (*bookHandler, error) {
 }
 
 func (b *bookHandler) List(w http.ResponseWriter, r *http.Request) {
-	reqParams, ok := r.Context().Value(bookSearchParamKey).(*BookQueryParams)
+	reqParams, ok := r.Context().Value(bookSearchParamKey).(*BookRequest)
 
 	// This should have been placed into the context by the GET api/v1/books middleware
 	if !ok || reqParams == nil {
