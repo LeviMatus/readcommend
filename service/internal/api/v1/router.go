@@ -20,6 +20,11 @@ func NewRouter(driver driver.Driver) (*chi.Mux, error) {
 		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
 	}
 
+	genreHandler, err := NewGenreHandler(driver)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
+	}
+
 	r := chi.NewRouter()
 
 	r.Mount("/books", func() http.Handler {
@@ -33,6 +38,7 @@ func NewRouter(driver driver.Driver) (*chi.Mux, error) {
 	}())
 
 	r.Mount("/authors", authorRoutes(authorHandler))
+	r.Mount("/genres", genreRoutes(genreHandler))
 
 	return r, nil
 }
