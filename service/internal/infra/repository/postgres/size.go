@@ -10,14 +10,15 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
-type Size struct {
+// size is a persistence layer model. It has support for nullable SQL fields.
+type size struct {
 	ID       int32
 	Title    string
 	MinPages encoding.NullInt16
 	MaxPages encoding.NullInt16
 }
 
-func (s Size) toSizeEntity() entity.Size {
+func (s size) toSizeEntity() entity.Size {
 	var (
 		min *int16
 		max *int16
@@ -47,6 +48,8 @@ type sizeRepository struct {
 	db *sql.DB
 }
 
+// NewSizeRepository accepts a pointer to a sql.DB type. If the pointer is nil, then an error is returned.
+// Otherwise the pointer is wrapped in an sizeRepository and a pointer to it is returned.
 func NewSizeRepository(db *sql.DB) (*sizeRepository, error) {
 	if db == nil {
 		return nil, ErrInvalidDependency
@@ -75,8 +78,10 @@ func (r *sizeRepository) List(ctx context.Context) ([]entity.Size, error) {
 	defer rows.Close()
 
 	var sizes []entity.Size
+
+	// Iterate over result-set, map to entity.Size, and place in resulting slice.
 	for rows.Next() {
-		var size Size
+		var size size
 		if err = rows.Scan(&size.ID, &size.Title, &size.MinPages, &size.MaxPages); err != nil {
 			return nil, fmt.Errorf("unable to scan data into a genre: %w", err)
 		}

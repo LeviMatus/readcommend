@@ -13,6 +13,8 @@ type genreRepository struct {
 	db *sql.DB
 }
 
+// NewGenreRepository accepts a pointer to a sql.DB type. If the pointer is nil, then an error is returned.
+// Otherwise the pointer is wrapped in an genreRepository and a pointer to it is returned.
 func NewGenreRepository(db *sql.DB) (*genreRepository, error) {
 	if db == nil {
 		return nil, ErrInvalidDependency
@@ -41,6 +43,8 @@ func (r *genreRepository) List(ctx context.Context) ([]entity.Genre, error) {
 	defer rows.Close()
 
 	var genres []entity.Genre
+
+	// Iterate over result-set, map to entity.Genre, and place in resulting slice.
 	for rows.Next() {
 		var genre entity.Genre
 		if err = rows.Scan(&genre.ID, &genre.Title); err != nil {
