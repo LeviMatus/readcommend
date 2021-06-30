@@ -23,6 +23,11 @@ func NewRouter(driver driver.Driver) (*chi.Mux, error) {
 		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
 	}
 
+	eraHandler, err := NewEraHandler(driver)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
+	}
+
 	sizeHandler, err := NewSizeHandler(driver)
 	if err != nil {
 		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
@@ -42,6 +47,7 @@ func NewRouter(driver driver.Driver) (*chi.Mux, error) {
 
 	r.Mount("/authors", authorRoutes(authorHandler))
 	r.Mount("/genres", genreRoutes(genreHandler))
+	r.Mount("/era", eraRoutes(eraHandler))
 	r.Mount("/sizes", sizeRoutes(sizeHandler))
 
 	return r, nil
