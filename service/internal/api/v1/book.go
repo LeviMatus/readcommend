@@ -33,7 +33,8 @@ func bookRoutes(h *bookHandler) chi.Router {
 			ValidateGetBookParams,
 		)
 		r.MethodNotAllowed(func(w http.ResponseWriter, r *http.Request) {
-			http.Error(w, fmt.Sprintf("HTTP method %s is not allowed", r.Method), 400)
+			_ = render.Render(w, r, ErrMethodNotAllowed(r.Method))
+			return
 		})
 		r.Get("/", h.List)
 	})
@@ -56,27 +57,28 @@ type BookQueryParams struct {
 // ValidateGetBookParams maps the query parameters to a BookQueryParams struct, which is injected
 // into the context of the request. As a part of this process, BookQueryParams.GenreIDs and
 // BookQueryParams.AuthorIDs are validated. If a string, such as "alpha" appears in the incoming string list,
-// then then validation fails and a 400 status code is returned.
+// then then validation fails and a 400 StatusCode code is returned.
 //
 // Following this, the resulting BookQueryParams is validated. If any search criteria fail validation, then
-// the routine returns a 400 status code and error message.
+// the routine returns a 400 StatusCode code and error message.
 func ValidateGetBookParams(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := r.ParseForm(); err != nil {
-			http.Error(w, err.Error(), 400)
+			_ = render.Render(w, r, ErrBadRequest(fmt.Errorf("an unexpected error occurred: %w", err)))
+			return
 		}
 
 		queryParams := new(BookQueryParams)
 		if err := schema.NewDecoder().Decode(queryParams, r.Form); err != nil {
 			var schemaErr schema.MultiError
 			if !errors.As(err, &schemaErr) {
-				http.Error(w, fmt.Sprintf("an unexpected error occurred %s", schemaErr), 400)
+				_ = render.Render(w, r, ErrBadRequest(fmt.Errorf("an unexpected error occured: %w", schemaErr)))
 				return
 			}
 			for k, v := range schemaErr {
 				switch v.(type) {
 				case schema.ConversionError:
-					http.Error(w, fmt.Sprintf("%s: recieved wrong type for parameter %s", entity.ErrInvalidQueryParam, k), 400)
+					_ = render.Render(w, r, ErrBadRequest(fmt.Errorf("%w: received wrong type for parameter %s", entity.ErrInvalidQueryParam, k)))
 					return
 				case schema.UnknownKeyError:
 					log.Println("WARN: " + err.Error())
@@ -85,27 +87,50 @@ func ValidateGetBookParams(next http.Handler) http.Handler {
 		}
 
 		if queryParams.MinPages != nil && !util.Int16InRange(*queryParams.MinPages, minimumPageParam, maximumPageParam) {
-			http.Error(w, fmt.Sprintf("%s: min-pages is %d but should be in range [%d,%d]", entity.ErrInvalidQueryParam, *queryParams.MinPages, minimumPageParam, maximumPageParam), 400)
+			_ = render.Render(w, r, ErrBadRequest(
+				fmt.Errorf("%w: min-pages is %d but should be in range [%d,%d]",
+					entity.ErrInvalidQueryParam,
+					*queryParams.MinPages,
+					minimumPageParam,
+					maximumPageParam)))
 			return
 		}
 
 		if queryParams.MaxPages != nil && !util.Int16InRange(*queryParams.MaxPages, minimumPageParam, maximumPageParam) {
-			http.Error(w, fmt.Sprintf("%s: max-pages is %d but should be in range [%d,%d]", entity.ErrInvalidQueryParam, *queryParams.MaxPages, minimumPageParam, maximumPageParam), 400)
+			_ = render.Render(w, r, ErrBadRequest(
+				fmt.Errorf("%w: max-pages is %d but should be in range [%d,%d]",
+					entity.ErrInvalidQueryParam,
+					*queryParams.MaxPages,
+					minimumPageParam,
+					maximumPageParam)))
 			return
 		}
 
 		if queryParams.MinYearPublished != nil && !util.Int16InRange(*queryParams.MinYearPublished, minimumYearParam, maximumYearParam) {
-			http.Error(w, fmt.Sprintf("%s: min-year is %d but should be in range [%d,%d]", entity.ErrInvalidQueryParam, *queryParams.MinYearPublished, minimumYearParam, maximumYearParam), 400)
+			_ = render.Render(w, r, ErrBadRequest(
+				fmt.Errorf("%w: min-year is %d but should be in range [%d,%d]",
+					entity.ErrInvalidQueryParam,
+					*queryParams.MinYearPublished,
+					minimumYearParam,
+					maximumYearParam)))
 			return
 		}
 
 		if queryParams.MaxYearPublished != nil && !util.Int16InRange(*queryParams.MaxYearPublished, minimumYearParam, maximumYearParam) {
-			http.Error(w, fmt.Sprintf("%s: max-year is %d but should be in range [%d,%d]", entity.ErrInvalidQueryParam, *queryParams.MaxYearPublished, minimumYearParam, maximumYearParam), 400)
+			_ = render.Render(w, r, ErrBadRequest(
+				fmt.Errorf("%w: max-year is %d but should be in range [%d,%d]",
+					entity.ErrInvalidQueryParam,
+					*queryParams.MaxYearPublished,
+					minimumYearParam,
+					maximumYearParam)))
 			return
 		}
 
 		if queryParams.Limit != nil && *queryParams.Limit < 1 {
-			http.Error(w, fmt.Sprintf("%s: limit is %d but should be greater than 0", entity.ErrInvalidQueryParam, *queryParams.Limit), 400)
+			_ = render.Render(w, r, ErrBadRequest(
+				fmt.Errorf("%w: limit is %d but should be greater than 0",
+					entity.ErrInvalidQueryParam,
+					*queryParams.Limit)))
 			return
 		}
 
@@ -131,7 +156,7 @@ func (b *bookHandler) List(w http.ResponseWriter, r *http.Request) {
 
 	// This should have been placed into the context by the GET api/v1/books middleware
 	if !ok || reqParams == nil {
-		http.Error(w, "internal server error", 400)
+		_ = render.Render(w, r, ErrInternalServer(errors.New("expected middleware to inject params into context")))
 		return
 	}
 
@@ -146,7 +171,7 @@ func (b *bookHandler) List(w http.ResponseWriter, r *http.Request) {
 		Limit:            reqParams.Limit,
 	})
 	if err != nil {
-		http.Error(w, "internal server error", 400)
+		_ = render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 

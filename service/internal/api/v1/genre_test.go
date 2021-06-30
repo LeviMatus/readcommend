@@ -74,7 +74,7 @@ func TestGenreHandler_List(t *testing.T) {
 			expectedHandler: "ListGenres",
 			target:          "/",
 			driverReturn:    []entity.Genre{mockGenre},
-			expectedBody:    "HTTP method POST is not allowed",
+			expectedBody:    `{"message":"HTTP method POST is not allowed"}`,
 			expectedCode:    400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Post(url, "application/json", nil)
@@ -84,7 +84,7 @@ func TestGenreHandler_List(t *testing.T) {
 			expectedHandler: "ListGenres",
 			target:          "/",
 			driverReturn:    []entity.Genre{},
-			expectedBody:    "internal server error",
+			expectedBody:    `{"message":"Internal Server Error"}`,
 			expectedCode:    400,
 			expectedErr:     errors.New("mock error returned from driver"),
 			sendRequest: func(url string) (*http.Response, error) {

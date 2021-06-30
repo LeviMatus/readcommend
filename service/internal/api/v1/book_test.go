@@ -89,7 +89,7 @@ func TestBookHandler_List(t *testing.T) {
 			expectedHandler: "SearchBooks",
 			target:          "/",
 			driverReturn:    []entity.Book{mockBook},
-			expectedBody:    "internal server error",
+			expectedBody:    `{"message":"Internal Server Error"}`,
 			expectedCode:    400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Get(url)
@@ -119,7 +119,7 @@ func TestBookHandler_List(t *testing.T) {
 		"invalid http method": {
 			expectedHandler: "ListAuthors",
 			target:          "/",
-			expectedBody:    "HTTP method POST is not allowed",
+			expectedBody:    `{"message":"HTTP method POST is not allowed"}`,
 			expectedCode:    400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Post(url, "application/json", nil)
@@ -127,7 +127,7 @@ func TestBookHandler_List(t *testing.T) {
 		},
 		"invalid books param - min-pages": {
 			target:       "/?min-pages=0",
-			expectedBody: "invalid URL query parameter provided: min-pages is 0 but should be in range [1,10000]",
+			expectedBody: `{"message":"invalid URL query parameter provided: min-pages is 0 but should be in range [1,10000]"}`,
 			expectedCode: 400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Get(url)
@@ -135,7 +135,7 @@ func TestBookHandler_List(t *testing.T) {
 		},
 		"invalid books param - max-pages": {
 			target:       "/?max-pages=10001",
-			expectedBody: "invalid URL query parameter provided: max-pages is 10001 but should be in range [1,10000]",
+			expectedBody: `{"message":"invalid URL query parameter provided: max-pages is 10001 but should be in range [1,10000]"}`,
 			expectedCode: 400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Get(url)
@@ -143,7 +143,7 @@ func TestBookHandler_List(t *testing.T) {
 		},
 		"invalid books param - min-year": {
 			target:       "/?min-year=1799",
-			expectedBody: "invalid URL query parameter provided: min-year is 1799 but should be in range [1800,2100]",
+			expectedBody: `{"message":"invalid URL query parameter provided: min-year is 1799 but should be in range [1800,2100]"}`,
 			expectedCode: 400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Get(url)
@@ -151,7 +151,7 @@ func TestBookHandler_List(t *testing.T) {
 		},
 		"invalid books param - max-year": {
 			target:       "/?max-year=2101",
-			expectedBody: "invalid URL query parameter provided: max-year is 2101 but should be in range [1800,2100]",
+			expectedBody: `{"message":"invalid URL query parameter provided: max-year is 2101 but should be in range [1800,2100]"}`,
 			expectedCode: 400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Get(url)
@@ -159,7 +159,7 @@ func TestBookHandler_List(t *testing.T) {
 		},
 		"invalid books param - limit": {
 			target:       "/?limit=0",
-			expectedBody: "invalid URL query parameter provided: limit is 0 but should be greater than 0",
+			expectedBody: `{"message":"invalid URL query parameter provided: limit is 0 but should be greater than 0"}`,
 			expectedCode: 400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Get(url)
@@ -167,7 +167,7 @@ func TestBookHandler_List(t *testing.T) {
 		},
 		"invalid books param - authors": {
 			target:       "/books?authors=1,beta,3",
-			expectedBody: "invalid URL query parameter provided: recieved wrong type for parameter authors",
+			expectedBody: `{"message":"invalid URL query parameter provided: received wrong type for parameter authors"}`,
 			expectedCode: 400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Get(url)
@@ -175,7 +175,7 @@ func TestBookHandler_List(t *testing.T) {
 		},
 		"invalid books param - genres": {
 			target:       "/books?genres=1,beta,3",
-			expectedBody: "invalid URL query parameter provided: recieved wrong type for parameter genres",
+			expectedBody: `{"message":"invalid URL query parameter provided: received wrong type for parameter genres"}`,
 			expectedCode: 400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Get(url)
@@ -224,6 +224,6 @@ func TestBookHandler_List(t *testing.T) {
 		resp := w.Result()
 		body, err := ioutil.ReadAll(resp.Body)
 		assert.NoError(t, err)
-		assert.Equal(t, "internal server error\n", string(body))
+		assert.Equal(t, `{"message":"Internal Server Error"}`+"\n", string(body))
 	})
 }

@@ -71,7 +71,7 @@ func TestSizeHandler_List(t *testing.T) {
 		"invalid http method": {
 			expectedHandler: "ListSizes",
 			target:          "/",
-			expectedBody:    "HTTP method POST is not allowed",
+			expectedBody:    `{"message":"HTTP method POST is not allowed"}`,
 			expectedCode:    400,
 			sendRequest: func(url string) (*http.Response, error) {
 				return http.Post(url, "application/json", nil)
@@ -81,7 +81,7 @@ func TestSizeHandler_List(t *testing.T) {
 			expectedHandler: "ListSizes",
 			target:          "/",
 			driverReturn:    []entity.Size{},
-			expectedBody:    "internal server error",
+			expectedBody:    `{"message":"Internal Server Error"}`,
 			expectedCode:    400,
 			expectedErr:     errors.New("mock error returned from driver"),
 			sendRequest: func(url string) (*http.Response, error) {
