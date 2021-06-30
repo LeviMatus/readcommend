@@ -14,19 +14,25 @@ func NewRouter(driver driver.Driver) (*chi.Mux, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
 	}
+
+	authorHandler, err := NewAuthorHandler(driver)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create v1 routes: %w", err)
+	}
+
 	r := chi.NewRouter()
 
-	r.Route("/", func(r chi.Router) {
-		r.Mount("/books", func() http.Handler {
-			br := chi.NewRouter()
-			br.Use(
-				cors.Handler(cors.Options{AllowedMethods: []string{"GET"}}),
-				ValidateGetBookParams,
-			)
-			br.Get("/", bookHandler.List)
-			return br
-		}())
-	})
+	r.Mount("/books", func() http.Handler {
+		br := chi.NewRouter()
+		br.Use(
+			cors.Handler(cors.Options{AllowedMethods: []string{"GET"}}),
+			ValidateGetBookParams,
+		)
+		br.Get("/", bookHandler.List)
+		return br
+	}())
+
+	r.Mount("/authors", authorRoutes(authorHandler))
 
 	return r, nil
 }
