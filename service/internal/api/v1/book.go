@@ -41,6 +41,12 @@ func bookRoutes(h *bookHandler) chi.Router {
 	return r
 }
 
+/**********************************************************
+ * Request and Response payloads/models for the REST api.
+ **********************************************************/
+
+// BookRequest is the request model used for searching for entity.Book types. These models are mapped
+// in the API middleware (in ValidateBookRequest). They are passed into the request's context.
 type BookRequest struct {
 	_ struct{}
 
@@ -138,11 +144,45 @@ func ValidateBookRequest(next http.Handler) http.Handler {
 	})
 }
 
-// bookHandler...
+// BookResponse is the response struct sent back to the client.
+// Currently it embeds a pointer to entity.Book. In the future it would be
+// possible to separate the two models and perform mapping if necessary.
+type BookResponse struct {
+	entity.Book
+}
+
+// newBookResponse accepts a pointer to an entity.Book and returns it embedded
+// into a BookResponse.
+func newBookResponse(book entity.Book) *BookResponse {
+	return &BookResponse{Book: book}
+}
+
+// Render is a stub for preprocessing the BookResponse model. In the future it may
+// be necessary to add some further data handling in here.
+func (br *BookResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
+
+func newBookListResponse(books []entity.Book) []render.Renderer {
+	out := make([]render.Renderer, len(books))
+	for i, b := range books {
+		out[i] = newBookResponse(b)
+	}
+	return out
+}
+
+/*****************************
+ * v1 Book endpoint handlers
+ *****************************/
+
+// bookHandler holds a reference to a book.Driver for use with the API endpoints.
 type bookHandler struct {
 	driver book.Driver
 }
 
+// NewBookHandler accepts a book.Driver which will be wrapped into a bookHandler. If the driver
+// is nil, then an error will be returned and the setup will fail. Otherwise a pointer to a new bookHandler
+// is returned.
 func NewBookHandler(driver book.Driver) (*bookHandler, error) {
 	if driver == nil {
 		return nil, errors.New("non-nil book driver is required to create a book handler")
@@ -151,6 +191,11 @@ func NewBookHandler(driver book.Driver) (*bookHandler, error) {
 	return &bookHandler{driver: driver}, nil
 }
 
+// List will use the incoming http.Request's Context to get a BookRequest. If this does not exist, then
+// an error is returned and processing is terminated.
+//
+// The BookRequest fields are mapped to a book.SearchInput. This will use the bookHandler's book.Driver
+// to find a list of entity.Book items that satisfy the search parameters.
 func (b *bookHandler) List(w http.ResponseWriter, r *http.Request) {
 	reqParams, ok := r.Context().Value(bookSearchParamKey).(*BookRequest)
 
@@ -175,29 +220,8 @@ func (b *bookHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// An adaptor between the service layer and persistance layer
-	// wouldn't be out of the question, but the conversion is very simple
-	// so I'll just do it directly here. In the future, abstracting this
-	// may be appropriate.
-	var out = make([]entity.Book, len(books))
-	for i, b := range books {
-		out[i] = entity.Book{
-			ID:            b.ID,
-			Title:         b.Title,
-			YearPublished: b.YearPublished,
-			Rating:        b.Rating,
-			Pages:         b.Pages,
-			Genre: entity.Genre{
-				ID:    b.Genre.ID,
-				Title: b.Genre.Title,
-			},
-			Author: entity.Author{
-				ID:        b.Author.ID,
-				FirstName: b.Author.FirstName,
-				LastName:  b.Author.LastName,
-			},
-		}
+	if err := render.RenderList(w, r, newBookListResponse(books)); err != nil {
+		_ = render.Render(w, r, ErrInternalServer(err))
+		return
 	}
-
-	render.JSON(w, r, out)
 }
