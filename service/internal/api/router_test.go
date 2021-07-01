@@ -86,7 +86,7 @@ func TestServer_Serve(t *testing.T) {
 				MinPages:         util.Int16Ptr(300),
 				GenreIDs:         []int16{2, 6},
 				AuthorIDs:        []int16{42, 43},
-				Limit:            util.Uint16Ptr(50),
+				Limit:            util.Uint64Ptr(50),
 			},
 			target:      "/api/v1/books?title=The+Silmarillion&max-year=1980&min-year=1970&max-pages=400&min-pages=300&genres=2&genres=6&authors=42&authors=43&limit=50",
 			expectedErr: nil,

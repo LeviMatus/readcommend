@@ -107,7 +107,7 @@ func TestBookHandler_List(t *testing.T) {
 				MinPages:         util.Int16Ptr(300),
 				GenreIDs:         []int16{2, 6},
 				AuthorIDs:        []int16{42, 43},
-				Limit:            util.Uint16Ptr(50),
+				Limit:            util.Uint64Ptr(50),
 			},
 			driverReturn: []entity.Book{mockBook},
 			expectedBody: expectedJson,
