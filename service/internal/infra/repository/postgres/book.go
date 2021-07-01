@@ -15,6 +15,8 @@ type bookRepository struct {
 	db *sql.DB
 }
 
+// NewBookRepository accepts a pointer to a sql.DB type. If the pointer is nil, then an error is returned.
+// Otherwise the pointer is wrapped in a bookRepository and a pointer to it is returned.
 func NewBookRepository(db *sql.DB) (*bookRepository, error) {
 	if db == nil {
 		return nil, ErrInvalidDependency
@@ -29,6 +31,9 @@ func NewBookRepository(db *sql.DB) (*bookRepository, error) {
 // cursing through the result set, then an error is returned.
 func (r *bookRepository) Search(ctx context.Context, params book.SearchInput) ([]entity.Book, error) {
 
+	/*
+	 * Start building SQL query
+	 */
 	builder := sq.StatementBuilder.PlaceholderFormat(sq.Dollar).
 		Select("book.id", "book.title", "year_published", "rating",
 			"pages", "author.id", "first_name", "last_name", "genre.id", "genre.title").
@@ -47,39 +52,42 @@ func (r *bookRepository) Search(ctx context.Context, params book.SearchInput) ([
 	builder = whereInt16Between(builder, "pages", params.MinPages, params.MaxPages)
 	builder = whereInt16Between(builder, "year_published", params.MinYearPublished, params.MaxYearPublished)
 
-	var limit uint64 = 10
 	if params.Limit != nil {
-		limit = *params.Limit
+		builder = builder.Limit(*params.Limit)
 	}
-	builder = builder.Limit(limit)
 
 	query, values, err := builder.ToSql()
 	if err != nil {
 		return nil, fmt.Errorf("unable to build SQL query: %w", err)
 	}
+	/*
+	 * Finish building SQL query
+	 */
 
-	rows, err := r.db.Query(query, values...)
+	rows, err := r.db.QueryContext(ctx, query, values...)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get books: %w", err)
 	}
 	defer rows.Close()
 
 	var books []entity.Book
+
+	// Iterate over result-set, map to entity.Book, and place in resulting slice.
 	for rows.Next() {
-		var book entity.Book
-		if err = rows.Scan(&book.ID,
-			&book.Title,
-			&book.YearPublished,
-			&book.Rating,
-			&book.Pages,
-			&book.Author.ID,
-			&book.Author.FirstName,
-			&book.Author.LastName,
-			&book.Genre.ID,
-			&book.Genre.Title); err != nil {
-			return nil, fmt.Errorf("unable to scan data into book: %w", err)
+		var b entity.Book
+		if err = rows.Scan(&b.ID,
+			&b.Title,
+			&b.YearPublished,
+			&b.Rating,
+			&b.Pages,
+			&b.Author.ID,
+			&b.Author.FirstName,
+			&b.Author.LastName,
+			&b.Genre.ID,
+			&b.Genre.Title); err != nil {
+			return nil, fmt.Errorf("unable to scan data into b: %w", err)
 		}
-		books = append(books, book)
+		books = append(books, b)
 	}
 	if err = rows.Err(); err != nil {
 		return nil, err

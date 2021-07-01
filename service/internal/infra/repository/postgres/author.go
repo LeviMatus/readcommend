@@ -13,6 +13,8 @@ type authorRepository struct {
 	db *sql.DB
 }
 
+// NewAuthorRepository accepts a pointer to a sql.DB type. If the pointer is nil, then an error is returned.
+// Otherwise the pointer is wrapped in an authorRepository and a pointer to it is returned.
 func NewAuthorRepository(db *sql.DB) (*authorRepository, error) {
 	if db == nil {
 		return nil, ErrInvalidDependency
@@ -33,6 +35,7 @@ func (r *authorRepository) List(ctx context.Context) ([]entity.Author, error) {
 	if err != nil {
 		return nil, fmt.Errorf("unable to build SQL query: %w", err)
 	}
+
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {
 		return nil, fmt.Errorf("unable to get authors: %w", err)
@@ -40,6 +43,8 @@ func (r *authorRepository) List(ctx context.Context) ([]entity.Author, error) {
 	defer rows.Close()
 
 	var authors []entity.Author
+
+	// Iterate over result-set, map to entity.Author, and place in resulting slice.
 	for rows.Next() {
 		var author entity.Author
 		if err = rows.Scan(&author.ID, &author.FirstName, &author.LastName); err != nil {

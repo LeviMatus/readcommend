@@ -10,14 +10,22 @@ import (
 	sq "github.com/Masterminds/squirrel"
 )
 
-type Era struct {
-	ID      int32
-	Title   string
+// era is a persistence layer model. It has support for nullable SQL fields.
+type era struct {
+	// ID is the primary identifier of an era.
+	ID int32
+
+	// Title is the name of an era.
+	Title string
+
+	// MinYear satisfies interfaces necessary to scan SQL's NULL into a Go type.
 	MinYear encoding.NullInt16
+
+	// MaxYear satisfies interfaces necessary to scan SQL's NULL into a Go type.
 	MaxYear encoding.NullInt16
 }
 
-func (e Era) toEraEntity() entity.Era {
+func (e era) toEraEntity() entity.Era {
 	var (
 		min *int16
 		max *int16
@@ -47,6 +55,8 @@ type eraRepository struct {
 	db *sql.DB
 }
 
+// NewEraRepository accepts a pointer to a sql.DB type. If the pointer is nil, then an error is returned.
+// Otherwise the pointer is wrapped in an eraRepository and a pointer to it is returned.
 func NewEraRepository(db *sql.DB) (*eraRepository, error) {
 	if db == nil {
 		return nil, ErrInvalidDependency
@@ -75,8 +85,10 @@ func (r *eraRepository) List(ctx context.Context) ([]entity.Era, error) {
 	defer rows.Close()
 
 	var eras []entity.Era
+
+	// Iterate over result-set, map to entity.Era, and place in resulting slice.
 	for rows.Next() {
-		var era Era
+		var era era
 		if err = rows.Scan(&era.ID, &era.Title, &era.MinYear, &era.MaxYear); err != nil {
 			return nil, fmt.Errorf("unable to scan data into era: %w", err)
 		}
