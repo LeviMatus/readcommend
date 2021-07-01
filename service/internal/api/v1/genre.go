@@ -25,6 +25,41 @@ func genreRoutes(h *genreHandler) chi.Router {
 	return r
 }
 
+/**********************************************************
+ * Request and Response payloads/models for the REST api.
+ **********************************************************/
+
+// GenreResponse is the response struct sent back to the client.
+// Currently it embeds a pointer to entity.Genre. In the future it would be
+// possible to separate the two models and perform mapping if necessary.
+type GenreResponse struct {
+	entity.Genre
+}
+
+// newBookResponse accepts a pointer to an entity.Book and returns it embedded
+// into a BookResponse.
+func newGenreResponse(genre entity.Genre) *GenreResponse {
+	return &GenreResponse{Genre: genre}
+}
+
+// Render is a stub for preprocessing the BookResponse model. In the future it may
+// be necessary to add some further data handling in here.
+func (br *GenreResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
+
+func newGenreListResponse(genres []entity.Genre) []render.Renderer {
+	out := make([]render.Renderer, len(genres))
+	for i, g := range genres {
+		out[i] = newGenreResponse(g)
+	}
+	return out
+}
+
+/*****************************
+ * v1 Genre endpoint handlers
+ *****************************/
+
 // genreHandler is used to wrap an genre.Driver. This can be used by the API to
 // drive the usecases powered by the driver.
 type genreHandler struct {
@@ -49,17 +84,8 @@ func (handler *genreHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// An adaptor between the service layer and persistence layer
-	// wouldn't be out of the question, but the conversion is very simple
-	// so I'll just do it directly here. In the future, abstracting this
-	// may be appropriate.
-	var out = make([]entity.Genre, len(genres))
-	for i, g := range genres {
-		out[i] = entity.Genre{
-			ID:    g.ID,
-			Title: g.Title,
-		}
+	if err := render.RenderList(w, r, newGenreListResponse(genres)); err != nil {
+		_ = render.Render(w, r, ErrInternalServer(err))
+		return
 	}
-
-	render.JSON(w, r, out)
 }

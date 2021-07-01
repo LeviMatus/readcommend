@@ -25,6 +25,41 @@ func eraRoutes(h *eraHandler) chi.Router {
 	return r
 }
 
+/**********************************************************
+ * Request and Response payloads/models for the REST api.
+ **********************************************************/
+
+// EraResponse is the response struct sent back to the client.
+// Currently it embeds a pointer to entity.Era. In the future it would be
+// possible to separate the two models and perform mapping if necessary.
+type EraResponse struct {
+	entity.Era
+}
+
+// newBookResponse accepts a pointer to an entity.Book and returns it embedded
+// into a BookResponse.
+func newEraResponse(era entity.Era) *EraResponse {
+	return &EraResponse{Era: era}
+}
+
+// Render is a stub for preprocessing the BookResponse model. In the future it may
+// be necessary to add some further data handling in here.
+func (br *EraResponse) Render(_ http.ResponseWriter, _ *http.Request) error {
+	return nil
+}
+
+func newEraListResponse(eras []entity.Era) []render.Renderer {
+	out := make([]render.Renderer, len(eras))
+	for i, e := range eras {
+		out[i] = newEraResponse(e)
+	}
+	return out
+}
+
+/*****************************
+ * v1 Era endpoint handlers
+ *****************************/
+
 // eraHandler is used to wrap an era.Driver. This can be used by the API to
 // drive the usecases powered by the driver.
 type eraHandler struct {
@@ -49,19 +84,8 @@ func (handler *eraHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	// An adaptor between the service layer and persistence layer
-	// wouldn't be out of the question, but the conversion is very simple
-	// so I'll just do it directly here. In the future, abstracting this
-	// may be appropriate.
-	var out = make([]entity.Era, len(eras))
-	for i, e := range eras {
-		out[i] = entity.Era{
-			ID:      e.ID,
-			Title:   e.Title,
-			MinYear: e.MinYear,
-			MaxYear: e.MaxYear,
-		}
+	if err := render.RenderList(w, r, newEraListResponse(eras)); err != nil {
+		_ = render.Render(w, r, ErrInternalServer(err))
+		return
 	}
-
-	render.JSON(w, r, out)
 }
