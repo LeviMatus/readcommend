@@ -176,3 +176,7 @@ or
 
 Of course, you can always just use
 > go run service/main.go serve
+
+# Note
+I normally would unit test my CLI. I've run out of time I can
+allocate towards this. I want to acknowledge the fact that these are missing.
