@@ -73,6 +73,12 @@ You should see the front-end app appear, with all components displaying error me
 
 # Deploying and running back-end microservice
 
+## Quick Start
+Run `go run service/main.go --db-password` and input the password for the database when prompted.
+
+---
+
+## Further Configuration and Options
 The Readcommend API is built in a composable manner. Right now it uses a backend Postgres
 database, and a REST API (built in Chi) to serve data. The way it is constructed, any backend database
 can be dropped in with minimal refactoring due to the use of repository interfaces. Similarly, the API
@@ -106,7 +112,7 @@ The output of `make install` is a binary you can invoke on your PATH named `read
 
 ## Running/Deploying
 
-Readcommend API is deployed via a CLI command, `readcommend serve` There are various flags you can pass this
+The readcommend API is deployed via a CLI command, `readcommend serve` There are various flags you can pass this
 to configure connection settings. The following described how to configure the server:
 
 1. Config File
@@ -159,7 +165,6 @@ the possible flags you may provide:
 | -db-password  	| false       	            | If true, prompts the user to input a hidden password.      	|
 | --api-host     	| 0.0.0.0   	            | The host at which the API should listen on.                	|
 | --api-port     	| 5000        	            | The port at which the API should listen on.                	|
-| -v            	| false       	            | Verbose logging, if toggled to true.                       	|
 | -config           | $HOME/.readcommend       	| Absolute path to your config file.                       	|
 
 #### Examples
