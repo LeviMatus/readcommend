@@ -1,4 +1,4 @@
-module github.com/LeviMatus/readcommend
+module github.com/LeviMatus/readcommend/service
 
 go 1.15
 

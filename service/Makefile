@@ -3,15 +3,15 @@ all: clean test build
 
 clean:
 	go clean ./...
-	goclean -testcache
+	go clean -testcache
 	rm -f readcommend
 
 test:
 	go test ./... -bench=.
 
-build: clean
-	go build -o readcommend -v service/cmd/api/main.go
+build: clean test
+	go build -o readcommend -v main.go
 
-install: clean test
-	go build -i -o readcommend service/cmd/api/main.go
+install:
+	go build -i -o readcommend main.go
 	mv readcommend $(GOPATH)/bin
