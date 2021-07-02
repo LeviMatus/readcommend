@@ -88,17 +88,7 @@ Make receipes are provided for backend actions. To use the Makefile, its recomme
 your working directory to [service/](service).
 
 ## Testing
-### Unit Tests
-Unit tests are provided for the backend service. To run this, issue `make test`.
-
-### Benchmarks
-Benchmark tests are provided for the api using minimal mock data. To run these, issue `make benchmark`.
-
-### Test Coverage
-To see what percentage of the code has been covered by test cases, issue `make coverage`
-
-### Check linting
-To see if the code passes common Golang linting tools, issue `make lint`
+Running `make test` will run unit tests and benchmark tests.
 
 ## Building
 

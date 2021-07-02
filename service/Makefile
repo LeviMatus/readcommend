@@ -7,7 +7,7 @@ clean:
 	rm -f readcommend
 
 test:
-	go test -v ./...
+	go test ./... -bench=.
 
 build: clean
 	go build -o readcommend -v service/cmd/api/main.go
