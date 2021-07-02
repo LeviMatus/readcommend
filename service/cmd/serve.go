@@ -13,12 +13,25 @@ import (
 	"github.com/LeviMatus/readcommend/service/internal/driver/size"
 	"github.com/LeviMatus/readcommend/service/internal/infra/repository/postgres"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 func init() {
 	rootCmd.AddCommand(serveCmd)
 
 	attachDatabaseFlags(serveCmd)
+
+	serveCmd.Flags().StringVar(&cfg.Database.Host,
+		"api-host",
+		"0.0.0.0",
+		`The host that the API listens on (default "0.0.0.0")`)
+	serveCmd.Flags().StringVar(&cfg.Database.Port,
+		"api-port",
+		"5000",
+		`The port that the API listens on (default "5000")`)
+
+	viper.BindPFlag("api.host", serveCmd.Flag("api-host"))
+	viper.BindPFlag("api.port", serveCmd.Flag("api-port"))
 }
 
 var serveCmd = &cobra.Command{

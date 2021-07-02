@@ -6,6 +6,7 @@ import (
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
+	"github.com/spf13/viper"
 )
 
 var (
@@ -43,6 +44,13 @@ func attachDatabaseFlags(cmd *cobra.Command) {
 		"db-password",
 		false,
 		`Prompt for the database password, if true`)
+
+	viper.BindPFlag("database.host", cmd.Flag("db-host"))
+	viper.BindPFlag("database.port", cmd.Flag("db-port"))
+	viper.BindPFlag("database.name", cmd.Flag("db-name"))
+	viper.BindPFlag("database.schema", cmd.Flag("db-schema"))
+	viper.BindPFlag("database.ssl-mode", cmd.Flag("db-ssl-mode"))
+	viper.BindPFlag("database.username", cmd.Flag("db-username"))
 }
 
 // validatePassword will prompt for a user-provided password interactively.
