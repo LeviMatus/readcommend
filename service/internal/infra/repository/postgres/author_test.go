@@ -10,6 +10,7 @@ import (
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestNewAuthorRepository(t *testing.T) {
@@ -28,14 +29,14 @@ func TestNewAuthorRepository(t *testing.T) {
 		},
 		"successful create repository": {
 			input:        &db,
-			expect:       &authorRepository{db: &db},
+			expect:       &authorRepository{db: &db, logger: zap.NewNop()},
 			errAssertion: assert.NoError,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual, err := NewAuthorRepository(tt.input)
+			actual, err := NewAuthorRepository(tt.input, zap.NewNop())
 			assert.Equal(t, tt.expect, actual)
 			tt.errAssertion(t, err)
 		})
@@ -87,7 +88,7 @@ func TestAuthorPostgresRepo_GetAuthors(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			db, mock := newMock(t)
-			repo := &authorRepository{db}
+			repo := &authorRepository{db: db, logger: zap.NewNop()}
 
 			tt.setQueryExpectations(mock.ExpectQuery(regexp.QuoteMeta(query)))
 

@@ -6,7 +6,6 @@ import (
 	"net"
 
 	"github.com/LeviMatus/readcommend/service/internal/api"
-	"github.com/LeviMatus/readcommend/service/internal/driver"
 	"github.com/LeviMatus/readcommend/service/internal/driver/author"
 	"github.com/LeviMatus/readcommend/service/internal/driver/book"
 	"github.com/LeviMatus/readcommend/service/internal/driver/era"
@@ -26,7 +25,8 @@ var serveCmd = &cobra.Command{
 	Use:   "serve",
 	Short: "Start the readcommend server",
 	Run: func(cmd *cobra.Command, args []string) {
-		// TODO: setup logger
+		defer logger.Sync()
+
 		conStr := fmt.Sprintf(
 			"host=%s port=%s user=%s password=%s dbname=%s sslmode=%s",
 			cfg.Database.Host, cfg.Database.Port, cfg.Database.Username, cfg.Database.Password, cfg.Database.Database, cfg.Database.SSL)
@@ -37,66 +37,67 @@ var serveCmd = &cobra.Command{
 
 		db, err := sql.Open("postgres", conStr)
 		if err != nil {
-			// TODO: logging
+			logger.Error(fmt.Sprintf("unable to connect to database: %s", err))
 			ExitRequirements.Exit()
 		}
 
 		if err := db.Ping(); err != nil {
-			// TODO: logging
+			logger.Error(fmt.Sprintf("unable to verify DB connection: %s", err))
 			ExitRequirements.Exit()
 		}
+		logger.Info("database connection established")
 
-		bookRepo, err := postgres.NewBookRepository(db)
+		bookRepo, err := postgres.NewBookRepository(db, logger)
 		if err != nil {
-			// TODO: logging
+			logger.Error(fmt.Sprintf("unable to create Book repository: %s", err))
 			ExitRequirements.Exit()
 		}
 
-		authorRepo, err := postgres.NewAuthorRepository(db)
+		authorRepo, err := postgres.NewAuthorRepository(db, logger)
 		if err != nil {
-			// TODO: logging
+			logger.Error(fmt.Sprintf("unable to create Author repository: %s", err))
 			ExitRequirements.Exit()
 		}
 
-		genreRepo, err := postgres.NewGenreRepository(db)
+		genreRepo, err := postgres.NewGenreRepository(db, logger)
 		if err != nil {
-			// TODO: logging
+			logger.Error(fmt.Sprintf("unable to create Genre repository: %s", err))
 			ExitRequirements.Exit()
 		}
 
-		eraRepo, err := postgres.NewEraRepository(db)
+		eraRepo, err := postgres.NewEraRepository(db, logger)
 		if err != nil {
-			// TODO: logging
+			logger.Error(fmt.Sprintf("unable to create Era repository: %s", err))
 			ExitRequirements.Exit()
 		}
 
-		sizeRepo, err := postgres.NewSizeRepository(db)
+		sizeRepo, err := postgres.NewSizeRepository(db, logger)
 		if err != nil {
-			// TODO: logging
+			logger.Error(fmt.Sprintf("unable to create Size repository: %s", err))
 			ExitRequirements.Exit()
 		}
 
-		d, err := driver.New(
+		r, err := api.New(
 			author.NewDriver(authorRepo),
-			genre.NewDriver(genreRepo),
 			size.NewDriver(sizeRepo),
+			genre.NewDriver(genreRepo),
 			era.NewDriver(eraRepo),
-			book.NewDriver(bookRepo))
+			book.NewDriver(bookRepo),
+			logger)
 
-		r, err := api.New(d)
 		if err != nil {
-			// TODO: logging
+			logger.Error(fmt.Sprintf("unable to create Driver: %s", err))
 			ExitRequirements.Exit()
 		}
 
 		l, err := net.Listen("tcp", fmt.Sprintf("%s:%s", cfg.API.Host, cfg.API.Port))
 		if err != nil {
-			// TODO: logging
+			logger.Error(fmt.Sprintf("unable to listen on specified interface/port: %s", err))
 			ExitListen.Exit()
 		}
 
 		if err := r.Serve(l); err != nil {
-			// TODO: logging
+			logger.Error(fmt.Sprintf("an error occurred while serving: %s", err))
 			ExitServing.Exit()
 		}
 	},

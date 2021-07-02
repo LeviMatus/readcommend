@@ -12,6 +12,7 @@ import (
 	"github.com/LeviMatus/readcommend/service/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestNewEraRepository(t *testing.T) {
@@ -30,14 +31,14 @@ func TestNewEraRepository(t *testing.T) {
 		},
 		"successful create repository": {
 			input:        &db,
-			expect:       &eraRepository{db: &db},
+			expect:       &eraRepository{db: &db, logger: zap.NewNop()},
 			errAssertion: assert.NoError,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual, err := NewEraRepository(tt.input)
+			actual, err := NewEraRepository(tt.input, zap.NewNop())
 			assert.Equal(t, tt.expect, actual)
 			tt.errAssertion(t, err)
 		})
@@ -100,7 +101,7 @@ func TestEraPostgresRepo_GetEras(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			db, mock := newMock(t)
-			repo := &eraRepository{db}
+			repo := &eraRepository{db: db, logger: zap.NewNop()}
 
 			tt.setQueryExpectations(mock.ExpectQuery(regexp.QuoteMeta(query)))
 

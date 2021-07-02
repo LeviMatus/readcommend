@@ -9,18 +9,19 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/LeviMatus/readcommend/service/internal/driver"
-	"github.com/LeviMatus/readcommend/service/internal/driver/drivertest"
+	"github.com/LeviMatus/readcommend/service/internal/driver/size"
+	"github.com/LeviMatus/readcommend/service/internal/driver/size/sizetest"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/LeviMatus/readcommend/service/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 )
 
 func TestNewSizeHandler(t *testing.T) {
 
 	tests := map[string]struct {
-		driver       driver.Driver
+		driver       size.Driver
 		errAssertion assert.ErrorAssertionFunc
 		valAssertion assert.ValueAssertionFunc
 	}{
@@ -29,7 +30,7 @@ func TestNewSizeHandler(t *testing.T) {
 			valAssertion: assert.Nil,
 		},
 		"handler created": {
-			driver:       &drivertest.DriverMock{},
+			driver:       &sizetest.DriverMock{},
 			errAssertion: assert.NoError,
 			valAssertion: assert.NotNil,
 		},
@@ -37,7 +38,7 @@ func TestNewSizeHandler(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			h, err := NewSizeHandler(tt.driver)
+			h, err := NewSizeHandler(tt.driver, zap.NewNop())
 			tt.errAssertion(t, err)
 			tt.valAssertion(t, h)
 		})
@@ -92,8 +93,8 @@ func TestSizeHandler_List(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			driverMock := drivertest.DriverMock{}
-			handler := sizeHandler{driver: &driverMock}
+			driverMock := sizetest.DriverMock{}
+			handler := sizeHandler{driver: &driverMock, logger: zap.NewNop()}
 
 			r := sizeRoutes(&handler)
 

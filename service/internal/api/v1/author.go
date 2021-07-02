@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/LeviMatus/readcommend/service/internal/driver/author"
@@ -9,6 +10,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 func authorRoutes(h *authorHandler) chi.Router {
@@ -65,27 +67,30 @@ func newAuthorListResponse(authors []entity.Author) []render.Renderer {
 // drive the usecases powered by the driver.
 type authorHandler struct {
 	driver author.Driver
+	logger *zap.Logger
 }
 
 // NewAuthorHandler accepts an author.Driver and, if valid, returns a pointer to an authorHandler. If the author.Driver
 // is nil, then an error is returned.
-func NewAuthorHandler(driver author.Driver) (*authorHandler, error) {
+func NewAuthorHandler(driver author.Driver, logger *zap.Logger) (*authorHandler, error) {
 	if driver == nil {
 		return nil, errors.New("non-nil author driver is required to create an author handler")
 	}
 
-	return &authorHandler{driver: driver}, nil
+	return &authorHandler{driver: driver, logger: logger}, nil
 }
 
 // List is an HTTP method that lists all entity.Author types that are accessible in the authorHandler's driver.
-func (a *authorHandler) List(w http.ResponseWriter, r *http.Request) {
-	authors, err := a.driver.ListAuthors(r.Context())
+func (handler *authorHandler) List(w http.ResponseWriter, r *http.Request) {
+	authors, err := handler.driver.ListAuthors(r.Context())
 	if err != nil {
+		handler.logger.Error(fmt.Sprintf("error listing authors: %s", err))
 		_ = render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 
 	if err := render.RenderList(w, r, newAuthorListResponse(authors)); err != nil {
+		handler.logger.Error(fmt.Sprintf("error rendering authors: %s", err))
 		_ = render.Render(w, r, ErrInternalServer(err))
 		return
 	}

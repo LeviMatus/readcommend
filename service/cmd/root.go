@@ -3,13 +3,13 @@ package cmd
 import (
 	"bytes"
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"go.uber.org/zap"
 	"gopkg.in/yaml.v3"
 )
 
@@ -22,13 +22,20 @@ var rootCmd = &cobra.Command{
 	Short: "Backend tooling for human bookworms",
 	Long: `Tooling and supporting backend API for interfacing with the readcommend backing database.
 				use this to query for books directly or standup an application server.`,
+	PersistentPreRun: func(cmd *cobra.Command, args []string) {
+		var err error
+		// for simplicity, I'm just using a default zap production logger.
+		logger, err = zap.NewProduction()
+		if err != nil {
+			_, _ = fmt.Fprintf(os.Stderr, "cannot setup logger: %s", err)
+			ExitRequirements.Exit()
+		}
+	},
 }
 
 func Execute() {
 	if err := rootCmd.Execute(); err != nil {
-		fmt.Println(os.Stderr, err)
-		log.Println("line 46 root.go")
-		os.Exit(1)
+		_, _ = fmt.Fprintln(os.Stderr, err)
 	}
 }
 
@@ -38,8 +45,7 @@ func setupConfig() {
 	// Precedence is Flag > Env Var > Config File > Zero Values.
 	b, err := yaml.Marshal(cfg)
 	if err != nil {
-		log.Println("line 54 root.go")
-		// TODO: log here
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		ExitConfigSetup.Exit()
 	}
 
@@ -48,8 +54,7 @@ func setupConfig() {
 
 	// Take the default configReader and populate the viper config we're building with defaults.
 	if err := viper.MergeConfig(configReader); err != nil {
-		log.Println("line 62 root.go")
-		// TODO: log here
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		ExitConfigSetup.Exit()
 	}
 
@@ -60,7 +65,7 @@ func setupConfig() {
 	} else {
 		home, err := homedir.Dir()
 		if err != nil {
-			// TODO: logging
+			_, _ = fmt.Fprintln(os.Stderr, err)
 			ExitConfigSetup.Exit()
 		}
 		viper.AddConfigPath(home)
@@ -73,11 +78,9 @@ func setupConfig() {
 	if err := viper.MergeInConfig(); err != nil {
 		switch err.(type) {
 		case viper.ConfigFileNotFoundError:
-			log.Println("line 71 root.go - non fatal")
-			// TODO: log warning that file not found, zero-values used
+			fmt.Printf("user's config file %s was not found, but will try continuing anyway...", configFile)
 		default:
-			log.Println("line 74 root.go")
-			// TODO: logging
+			_, _ = fmt.Fprintln(os.Stderr, err)
 			ExitConfigSetup.Exit()
 		}
 	}
@@ -89,13 +92,10 @@ func setupConfig() {
 	viper.SetEnvKeyReplacer(
 		strings.NewReplacer(".", "_", "-", "_"),
 	)
-	log.Printf("%t - root.go", promptDatabasePass)
 
 	// Finally unmarshal viper's config into the application config type.
 	if err := viper.Unmarshal(&cfg); err != nil {
-		// TODO: logging
-		log.Println(err)
-		log.Println("line 87 root.go")
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		ExitConfigSetup.Exit()
 	}
 

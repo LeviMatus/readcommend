@@ -7,27 +7,31 @@ import (
 
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	sq "github.com/Masterminds/squirrel"
+	"go.uber.org/zap"
 )
 
 type authorRepository struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *zap.Logger
 }
 
 // NewAuthorRepository accepts a pointer to a sql.DB type. If the pointer is nil, then an error is returned.
 // Otherwise the pointer is wrapped in an authorRepository and a pointer to it is returned.
-func NewAuthorRepository(db *sql.DB) (*authorRepository, error) {
-	if db == nil {
+func NewAuthorRepository(db *sql.DB, logger *zap.Logger) (*authorRepository, error) {
+	if db == nil || logger == nil {
 		return nil, ErrInvalidDependency
 	}
 
 	return &authorRepository{
-		db: db,
+		db:     db,
+		logger: logger,
 	}, nil
 }
 
 // List selects all Authors in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
 func (r *authorRepository) List(ctx context.Context) ([]entity.Author, error) {
+	r.logger.Debug("listing authors from postgres repository")
 	query, _, err := sq.StatementBuilder.
 		Select("*").
 		From("author").
@@ -55,6 +59,8 @@ func (r *authorRepository) List(ctx context.Context) ([]entity.Author, error) {
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
+
+	r.logger.Debug(fmt.Sprintf("found %d authors in postgres repository", len(authors)))
 
 	return authors, nil
 }

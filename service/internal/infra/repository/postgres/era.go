@@ -8,6 +8,7 @@ import (
 	"github.com/LeviMatus/readcommend/service/internal/encoding"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	sq "github.com/Masterminds/squirrel"
+	"go.uber.org/zap"
 )
 
 // era is a persistence layer model. It has support for nullable SQL fields.
@@ -52,24 +53,28 @@ func (e era) toEraEntity() entity.Era {
 }
 
 type eraRepository struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *zap.Logger
 }
 
 // NewEraRepository accepts a pointer to a sql.DB type. If the pointer is nil, then an error is returned.
 // Otherwise the pointer is wrapped in an eraRepository and a pointer to it is returned.
-func NewEraRepository(db *sql.DB) (*eraRepository, error) {
-	if db == nil {
+func NewEraRepository(db *sql.DB, logger *zap.Logger) (*eraRepository, error) {
+	if db == nil || logger == nil {
 		return nil, ErrInvalidDependency
 	}
 
 	return &eraRepository{
-		db: db,
+		db:     db,
+		logger: logger,
 	}, nil
 }
 
 // List selects all Eras in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
 func (r *eraRepository) List(ctx context.Context) ([]entity.Era, error) {
+	r.logger.Debug("listing eras from postgres repository")
+
 	query, _, err := sq.StatementBuilder.
 		Select("*").
 		From("era").
@@ -97,6 +102,8 @@ func (r *eraRepository) List(ctx context.Context) ([]entity.Era, error) {
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
+
+	r.logger.Debug(fmt.Sprintf("found %d eras in postgres repository", len(eras)))
 
 	return eras, nil
 }

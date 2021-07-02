@@ -1,7 +1,8 @@
 package cmd
 
 import (
-	"log"
+	"fmt"
+	"os"
 
 	"github.com/manifoldco/promptui"
 	"github.com/spf13/cobra"
@@ -60,7 +61,7 @@ func validatePassword() {
 	result, err := prompt.Run()
 
 	if err != nil {
-		log.Println("line 64 serve.go")
+		_, _ = fmt.Fprintln(os.Stderr, err)
 		ExitConfigSetup.Exit()
 	}
 

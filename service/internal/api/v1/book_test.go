@@ -8,20 +8,20 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/LeviMatus/readcommend/service/internal/driver"
 	"github.com/LeviMatus/readcommend/service/internal/driver/book"
-	"github.com/LeviMatus/readcommend/service/internal/driver/drivertest"
+	"github.com/LeviMatus/readcommend/service/internal/driver/book/booktest"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/LeviMatus/readcommend/service/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 )
 
 func TestNewBookHandler(t *testing.T) {
 
 	tests := map[string]struct {
-		driver       driver.Driver
+		driver       book.Driver
 		errAssertion assert.ErrorAssertionFunc
 		valAssertion assert.ValueAssertionFunc
 	}{
@@ -30,7 +30,7 @@ func TestNewBookHandler(t *testing.T) {
 			valAssertion: assert.Nil,
 		},
 		"handler created": {
-			driver:       &drivertest.DriverMock{},
+			driver:       &booktest.DriverMock{},
 			errAssertion: assert.NoError,
 			valAssertion: assert.NotNil,
 		},
@@ -38,7 +38,7 @@ func TestNewBookHandler(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			h, err := NewBookHandler(tt.driver)
+			h, err := NewBookHandler(tt.driver, zap.NewNop())
 			tt.errAssertion(t, err)
 			tt.valAssertion(t, h)
 		})
@@ -185,8 +185,8 @@ func TestBookHandler_List(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			driverMock := drivertest.DriverMock{}
-			handler := bookHandler{driver: &driverMock}
+			driverMock := booktest.DriverMock{}
+			handler := bookHandler{driver: &driverMock, logger: zap.NewNop()}
 
 			r := bookRoutes(&handler)
 
@@ -209,7 +209,7 @@ func TestBookHandler_List(t *testing.T) {
 	}
 
 	t.Run("error when nil not provided", func(t *testing.T) {
-		driverMock := drivertest.DriverMock{}
+		driverMock := booktest.DriverMock{}
 		handler := bookHandler{driver: &driverMock}
 		driverMock.On("SearchBooks",
 			mock.MatchedBy(func(_ context.Context) bool { return true }),

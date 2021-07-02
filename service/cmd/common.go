@@ -4,6 +4,7 @@ import (
 	"os"
 
 	"github.com/LeviMatus/readcommend/service/pkg/config"
+	"go.uber.org/zap"
 )
 
 // ExitCode refers to the code returned when the CLI terminates
@@ -40,4 +41,5 @@ func (e ExitCode) Exit() {
 var (
 	cfg        config.Config
 	configFile string
+	logger     *zap.Logger
 )

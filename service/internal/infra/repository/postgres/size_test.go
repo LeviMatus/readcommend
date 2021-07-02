@@ -12,6 +12,7 @@ import (
 	"github.com/LeviMatus/readcommend/service/pkg/util"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func newMock(t *testing.T) (*sql.DB, sqlmock.Sqlmock) {
@@ -38,14 +39,14 @@ func TestNewSizeRepository(t *testing.T) {
 		},
 		"successful create repository": {
 			input:        &db,
-			expect:       &sizeRepository{db: &db},
+			expect:       &sizeRepository{db: &db, logger: zap.NewNop()},
 			errAssertion: assert.NoError,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual, err := NewSizeRepository(tt.input)
+			actual, err := NewSizeRepository(tt.input, zap.NewNop())
 			assert.Equal(t, tt.expect, actual)
 			tt.errAssertion(t, err)
 		})
@@ -132,7 +133,7 @@ func TestSizeRepository_GetSizes(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			db, mock := newMock(t)
-			repo := &sizeRepository{db}
+			repo := &sizeRepository{db: db, logger: zap.NewNop()}
 
 			tt.setQueryExpectations(mock.ExpectQuery(regexp.QuoteMeta(query)))
 

@@ -14,6 +14,7 @@ import (
 	"github.com/go-chi/render"
 	"github.com/gorilla/schema"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 const (
@@ -178,17 +179,18 @@ func newBookListResponse(books []entity.Book) []render.Renderer {
 // bookHandler holds a reference to a book.Driver for use with the API endpoints.
 type bookHandler struct {
 	driver book.Driver
+	logger *zap.Logger
 }
 
 // NewBookHandler accepts a book.Driver which will be wrapped into a bookHandler. If the driver
 // is nil, then an error will be returned and the setup will fail. Otherwise a pointer to a new bookHandler
-// is returned.
-func NewBookHandler(driver book.Driver) (*bookHandler, error) {
+// is returned. It as assumed that the API has already checked for valid input params.
+func NewBookHandler(driver book.Driver, logger *zap.Logger) (*bookHandler, error) {
 	if driver == nil {
 		return nil, errors.New("non-nil book driver is required to create a book handler")
 	}
 
-	return &bookHandler{driver: driver}, nil
+	return &bookHandler{driver: driver, logger: logger}, nil
 }
 
 // List will use the incoming http.Request's Context to get a BookRequest. If this does not exist, then
@@ -196,7 +198,7 @@ func NewBookHandler(driver book.Driver) (*bookHandler, error) {
 //
 // The BookRequest fields are mapped to a book.SearchInput. This will use the bookHandler's book.Driver
 // to find a list of entity.Book items that satisfy the search parameters.
-func (b *bookHandler) List(w http.ResponseWriter, r *http.Request) {
+func (handler *bookHandler) List(w http.ResponseWriter, r *http.Request) {
 	reqParams, ok := r.Context().Value(bookSearchParamKey).(*BookRequest)
 
 	// This should have been placed into the context by the GET api/v1/books middleware
@@ -205,7 +207,7 @@ func (b *bookHandler) List(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	books, err := b.driver.SearchBooks(r.Context(), book.SearchInput{
+	books, err := handler.driver.SearchBooks(r.Context(), book.SearchInput{
 		Title:            reqParams.Title,
 		MaxYearPublished: reqParams.MaxYearPublished,
 		MinYearPublished: reqParams.MinYearPublished,
@@ -216,11 +218,13 @@ func (b *bookHandler) List(w http.ResponseWriter, r *http.Request) {
 		Limit:            reqParams.Limit,
 	})
 	if err != nil {
+		handler.logger.Error(fmt.Sprintf("error searching books: %s", err))
 		_ = render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 
 	if err := render.RenderList(w, r, newBookListResponse(books)); err != nil {
+		handler.logger.Error(fmt.Sprintf("error rendering books: %s", err))
 		_ = render.Render(w, r, ErrInternalServer(err))
 		return
 	}

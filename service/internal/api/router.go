@@ -5,11 +5,16 @@ import (
 	"net/http"
 
 	v1 "github.com/LeviMatus/readcommend/service/internal/api/v1"
-	"github.com/LeviMatus/readcommend/service/internal/driver"
+	"github.com/LeviMatus/readcommend/service/internal/driver/author"
+	"github.com/LeviMatus/readcommend/service/internal/driver/book"
+	"github.com/LeviMatus/readcommend/service/internal/driver/era"
+	"github.com/LeviMatus/readcommend/service/internal/driver/genre"
+	"github.com/LeviMatus/readcommend/service/internal/driver/size"
 	"github.com/go-chi/chi/v5"
 	"github.com/go-chi/chi/v5/middleware"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 type Server struct {
@@ -19,9 +24,29 @@ type Server struct {
 	port string
 }
 
-func New(driver driver.Driver) (*Server, error) {
-	if driver == nil {
-		return nil, errors.New("a non-nil driver is required")
+type RequiredDrivers struct {
+	AuthorDriver *author.Driver
+	GenreDriver  *genre.Driver
+	EraDriver    *era.Driver
+	SizeDriver   *size.Driver
+	BookDriver   *book.Driver
+}
+
+// Validate ensures that the required drivers are provided.
+func (req RequiredDrivers) Validate() error {
+	if req.AuthorDriver == nil ||
+		req.SizeDriver == nil ||
+		req.GenreDriver == nil ||
+		req.EraDriver == nil ||
+		req.BookDriver == nil {
+		return errors.New("all drivers must be non-nil")
+	}
+	return nil
+}
+
+func New(ad author.Driver, sd size.Driver, gd genre.Driver, ed era.Driver, bd book.Driver, logger *zap.Logger) (*Server, error) {
+	if ad == nil || sd == nil || gd == nil || ed == nil || bd == nil || logger == nil {
+		return nil, errors.New("dependencies for the API are not satisfied - non-nil drivers and logger are required")
 	}
 
 	s := Server{
@@ -35,7 +60,7 @@ func New(driver driver.Driver) (*Server, error) {
 		render.SetContentType(render.ContentTypeJSON),
 	)
 
-	v1Router, err := v1.NewRouter(driver)
+	v1Router, err := v1.NewRouter(ad, sd, gd, ed, bd, logger)
 	if err != nil {
 		return nil, err
 	}
