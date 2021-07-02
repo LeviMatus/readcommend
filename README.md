@@ -76,6 +76,13 @@ You should see the front-end app appear, with all components displaying error me
 ## Quick Start
 Run `go run service/main.go --db-password` and input the password for the database when prompted.
 
+If you have trouble running this, due to not being able to access the private repository, then you can use:
+`cd service && go build -mod vendor -o readcommend -v main.go` and then execute `/readcommend --db-password`.
+
+I've included convenience recipes in a Makefile as well: `build-vendor` and `install-vendor` that can be used.
+
+I know the Go team is trying to phase out vendoring, so I guess I owe them an apology for using it here :p But 
+when I have a private repo that my module references, its pretty convenient to enable y'all testing this.
 ---
 
 ## Further Configuration and Options
