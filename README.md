@@ -73,4 +73,106 @@ You should see the front-end app appear, with all components displaying error me
 
 # Deploying and running back-end microservice
 
-WRITE YOUR DOCUMENTATION HERE
+The Readcommend API is built in a composable manner. Right now it uses a backend Postgres
+database, and a REST API (built in Chi) to serve data. The way it is constructed, any backend database
+can be dropped in with minimal refactoring due to the use of repository interfaces. Similarly, the API
+logic could be replaced by other request handlers, such as gRPC, without extensive code surgery.
+
+Make receipes are provided for backend actions. To use the Makefile, its recommended changing
+your working directory to [service/](service).
+
+## Testing
+### Unit Tests
+Unit tests are provided for the backend service. To run this, issue `make test`.
+
+### Benchmarks
+Benchmark tests are provided for the api using minimal mock data. To run these, issue `make benchmark`.
+
+### Test Coverage
+To see what percentage of the code has been covered by test cases, issue `make coverage`
+
+### Check linting
+To see if the code passes common Golang linting tools, issue `make lint`
+
+## Building
+
+To build the backend API, run `make build`. This will generate a binary that can be executed. Alternatively,
+you may elect to install the binary to your path. If you'd like to do this, you can run `make install`. It will
+place to binary in your `$GOPATH/bin`.
+
+The output of `make build` is `readcommend`. 
+
+The output of `make install` is a binary you can invoke on your PATH named `readcommend`.
+
+## Running/Deploying
+
+Readcommend API is deployed via a CLI command, `readcommend serve` There are various flags you can pass this
+to configure connection settings. The following described how to configure the server:
+
+1. Config File
+
+Use a YAML file at `$HOME/.readcommend.yaml`. The application will pick this up automatically.
+
+```yaml
+---
+database:
+  host: localhost
+  port: 5432
+  database: readcommend
+  schema: public
+  ssl-mode: disable
+  username: postgres
+  password: password123
+api:
+  port: 5000
+  host: 0.0.0.0
+```
+
+2. Environment Variables
+
+Environment variables will overwrite config file values. Here is a list of the possible env vars that may be used:
+
+| Parameter         	| Default     	| Description                                                	|
+|-------------------	|-------------	|------------------------------------------------------------	|
+| DATABASE_HOST     	| localhost   	| The database host to connect to.                           	|
+| DATABASE_PORT     	| 5432        	| The port the database is listening on.                     	|
+| DATABASE_NAME     	| readcommend 	| The name of the database to connect to.                    	|
+| DATABASE_SCHEMA   	| public      	| The schema to connect to in the database.                  	|
+| DATABASE_SSL      	| disable     	| whether or not to use ssl-model. Should align with sql.DB. 	|
+| DATABASE_USERNAME 	| postgres    	| username to connect with.                                  	|
+| API_HOST          	| 0.0.0.0   	| The host at which the API should listen on.                	|
+| API_PORT          	| 5000        	| The port at which the API should listen on.                	|
+
+3. CLI Flags
+
+Using flags, you can opt to overwrite config files and/or environment variables. Here is a list of
+the possible flags you may provide:
+
+| Parameter    	| Default     	                | Description                                                	|
+|--------------	|------------------------------ |------------------------------------------------------------	|
+| --db-host      	| localhost   	            | The database host to connect to.                           	|
+| --db-port      	| 5432        	            | The port the database is listening on.                     	|
+| --db-name      	| readcommend 	            | The name of the database to connect to.                    	|
+| --db-schema    	| public      	            | The schema to connect to in the database.                  	|
+| --db-ssl-model 	| disable     	            | whether or not to use ssl-model. Should align with sql.DB. 	|
+| --db-username  	| postgres    	            | username to connect with.                                  	|
+| -db-password  	| false       	            | If true, prompts the user to input a hidden password.      	|
+| --api-host     	| 0.0.0.0   	            | The host at which the API should listen on.                	|
+| --api-port     	| 5000        	            | The port at which the API should listen on.                	|
+| -v            	| false       	            | Verbose logging, if toggled to true.                       	|
+| -config           | $HOME/.readcommend       	| Absolute path to your config file.                       	|
+
+#### Examples
+
+With a default config in `$HOME/.readcommend`
+> readcommend serve
+
+Overwritting the database name
+> readcommend server --db-name=foobar
+
+or
+
+> DATABASE_NAME=foobar readcommend server
+
+Of course, you can always just use
+> go run service/main.go serve
