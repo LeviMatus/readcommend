@@ -9,18 +9,19 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/LeviMatus/readcommend/service/internal/driver"
-	"github.com/LeviMatus/readcommend/service/internal/driver/drivertest"
+	"github.com/LeviMatus/readcommend/service/internal/driver/era"
+	"github.com/LeviMatus/readcommend/service/internal/driver/era/eratest"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/LeviMatus/readcommend/service/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 )
 
 func TestNewEraHandler(t *testing.T) {
 
 	tests := map[string]struct {
-		driver       driver.Driver
+		driver       era.Driver
 		errAssertion assert.ErrorAssertionFunc
 		valAssertion assert.ValueAssertionFunc
 	}{
@@ -29,7 +30,7 @@ func TestNewEraHandler(t *testing.T) {
 			valAssertion: assert.Nil,
 		},
 		"handler created": {
-			driver:       &drivertest.DriverMock{},
+			driver:       &eratest.DriverMock{},
 			errAssertion: assert.NoError,
 			valAssertion: assert.NotNil,
 		},
@@ -37,7 +38,7 @@ func TestNewEraHandler(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			h, err := NewEraHandler(tt.driver)
+			h, err := NewEraHandler(tt.driver, zap.NewNop())
 			tt.errAssertion(t, err)
 			tt.valAssertion(t, h)
 		})
@@ -98,8 +99,8 @@ func TestEraHandler_List(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			driverMock := drivertest.DriverMock{}
-			handler := eraHandler{driver: &driverMock}
+			driverMock := eratest.DriverMock{}
+			handler := eraHandler{driver: &driverMock, logger: zap.NewNop()}
 
 			r := eraRoutes(&handler)
 

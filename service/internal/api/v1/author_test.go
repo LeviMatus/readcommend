@@ -8,18 +8,19 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/LeviMatus/readcommend/service/internal/driver"
-	"github.com/LeviMatus/readcommend/service/internal/driver/drivertest"
+	"github.com/LeviMatus/readcommend/service/internal/driver/author"
+	"github.com/LeviMatus/readcommend/service/internal/driver/author/authortest"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 )
 
 func TestNewAuthorHandler(t *testing.T) {
 
 	tests := map[string]struct {
-		driver       driver.Driver
+		driver       author.Driver
 		errAssertion assert.ErrorAssertionFunc
 		valAssertion assert.ValueAssertionFunc
 	}{
@@ -28,7 +29,7 @@ func TestNewAuthorHandler(t *testing.T) {
 			valAssertion: assert.Nil,
 		},
 		"handler created": {
-			driver:       &drivertest.DriverMock{},
+			driver:       &authortest.DriverMock{},
 			errAssertion: assert.NoError,
 			valAssertion: assert.NotNil,
 		},
@@ -36,7 +37,7 @@ func TestNewAuthorHandler(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			h, err := NewAuthorHandler(tt.driver)
+			h, err := NewAuthorHandler(tt.driver, zap.NewNop())
 			tt.errAssertion(t, err)
 			tt.valAssertion(t, h)
 		})
@@ -96,8 +97,8 @@ func TestAuthorHandler_List(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			driverMock := drivertest.DriverMock{}
-			handler := authorHandler{driver: &driverMock}
+			driverMock := authortest.DriverMock{}
+			handler := authorHandler{driver: &driverMock, logger: zap.NewNop()}
 
 			r := authorRoutes(&handler)
 

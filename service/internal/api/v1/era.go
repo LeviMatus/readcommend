@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/LeviMatus/readcommend/service/internal/driver/era"
@@ -9,6 +10,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 func eraRoutes(h *eraHandler) chi.Router {
@@ -64,27 +66,30 @@ func newEraListResponse(eras []entity.Era) []render.Renderer {
 // drive the usecases powered by the driver.
 type eraHandler struct {
 	driver era.Driver
+	logger *zap.Logger
 }
 
 // NewEraHandler accepts an era.Driver and, if valid, returns a pointer to an eraHandler. If the era.Driver
 // is nil, then an error is returned.
-func NewEraHandler(driver era.Driver) (*eraHandler, error) {
+func NewEraHandler(driver era.Driver, logger *zap.Logger) (*eraHandler, error) {
 	if driver == nil {
 		return nil, errors.New("non-nil era driver is required to create a era handler")
 	}
 
-	return &eraHandler{driver: driver}, nil
+	return &eraHandler{driver: driver, logger: logger}, nil
 }
 
 // List is an HTTP method that lists all entity.Era types that are accessible in the eraHandler's driver.
 func (handler *eraHandler) List(w http.ResponseWriter, r *http.Request) {
 	eras, err := handler.driver.ListEras(r.Context())
 	if err != nil {
+		handler.logger.Error(fmt.Sprintf("error listing eras: %s", err))
 		_ = render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 
 	if err := render.RenderList(w, r, newEraListResponse(eras)); err != nil {
+		handler.logger.Error(fmt.Sprintf("error rendering eras: %s", err))
 		_ = render.Render(w, r, ErrInternalServer(err))
 		return
 	}

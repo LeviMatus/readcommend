@@ -1,6 +1,7 @@
 package v1
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/LeviMatus/readcommend/service/internal/driver/size"
@@ -9,6 +10,7 @@ import (
 	"github.com/go-chi/cors"
 	"github.com/go-chi/render"
 	"github.com/pkg/errors"
+	"go.uber.org/zap"
 )
 
 func sizeRoutes(h *sizeHandler) chi.Router {
@@ -64,27 +66,30 @@ func newSizeListResponse(sizes []entity.Size) []render.Renderer {
 // drive the usecases powered by the driver.
 type sizeHandler struct {
 	driver size.Driver
+	logger *zap.Logger
 }
 
 // NewSizeHandler accepts an size.Driver and, if valid, returns a pointer to an sizeHandler. If the size.Driver
 // is nil, then an error is returned.
-func NewSizeHandler(driver size.Driver) (*sizeHandler, error) {
+func NewSizeHandler(driver size.Driver, logger *zap.Logger) (*sizeHandler, error) {
 	if driver == nil {
 		return nil, errors.New("non-nil size driver is required to create a size handler")
 	}
 
-	return &sizeHandler{driver: driver}, nil
+	return &sizeHandler{driver: driver, logger: logger}, nil
 }
 
 // List is an HTTP method that lists all entity.Size types that are accessible in the sizeHandler's driver.
 func (handler *sizeHandler) List(w http.ResponseWriter, r *http.Request) {
 	sizes, err := handler.driver.ListSizes(r.Context())
 	if err != nil {
+		handler.logger.Error(fmt.Sprintf("error listing sizes: %s", err))
 		_ = render.Render(w, r, ErrInternalServer(err))
 		return
 	}
 
 	if err := render.RenderList(w, r, newSizeListResponse(sizes)); err != nil {
+		handler.logger.Error(fmt.Sprintf("error rendering sizes: %s", err))
 		_ = render.Render(w, r, ErrInternalServer(err))
 		return
 	}

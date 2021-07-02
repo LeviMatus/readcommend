@@ -9,17 +9,18 @@ import (
 	"net/http/httptest"
 	"testing"
 
-	"github.com/LeviMatus/readcommend/service/internal/driver"
-	"github.com/LeviMatus/readcommend/service/internal/driver/drivertest"
+	"github.com/LeviMatus/readcommend/service/internal/driver/genre"
+	"github.com/LeviMatus/readcommend/service/internal/driver/genre/genretest"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 )
 
 func TestNewGenreHandler(t *testing.T) {
 
 	tests := map[string]struct {
-		driver       driver.Driver
+		driver       genre.Driver
 		errAssertion assert.ErrorAssertionFunc
 		valAssertion assert.ValueAssertionFunc
 	}{
@@ -28,7 +29,7 @@ func TestNewGenreHandler(t *testing.T) {
 			valAssertion: assert.Nil,
 		},
 		"handler created": {
-			driver:       &drivertest.DriverMock{},
+			driver:       &genretest.DriverMock{},
 			errAssertion: assert.NoError,
 			valAssertion: assert.NotNil,
 		},
@@ -36,7 +37,7 @@ func TestNewGenreHandler(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			h, err := NewGenreHandler(tt.driver)
+			h, err := NewGenreHandler(tt.driver, zap.NewNop())
 			tt.errAssertion(t, err)
 			tt.valAssertion(t, h)
 		})
@@ -95,8 +96,8 @@ func TestGenreHandler_List(t *testing.T) {
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			driverMock := drivertest.DriverMock{}
-			handler := genreHandler{driver: &driverMock}
+			driverMock := genretest.DriverMock{}
+			handler := genreHandler{driver: &driverMock, logger: zap.NewNop()}
 
 			r := genreRoutes(&handler)
 

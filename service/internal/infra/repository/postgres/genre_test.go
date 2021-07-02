@@ -10,6 +10,7 @@ import (
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestNewGenreRepository(t *testing.T) {
@@ -28,14 +29,14 @@ func TestNewGenreRepository(t *testing.T) {
 		},
 		"successful create repository": {
 			input:        &db,
-			expect:       &genreRepository{db: &db},
+			expect:       &genreRepository{db: &db, logger: zap.NewNop()},
 			errAssertion: assert.NoError,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual, err := NewGenreRepository(tt.input)
+			actual, err := NewGenreRepository(tt.input, zap.NewNop())
 			assert.Equal(t, tt.expect, actual)
 			tt.errAssertion(t, err)
 		})
@@ -86,7 +87,7 @@ func TestGenreRepository_GetGenres(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			db, mock := newMock(t)
-			repo := &genreRepository{db}
+			repo := &genreRepository{db: db, logger: zap.NewNop()}
 
 			tt.setQueryExpectations(mock.ExpectQuery(regexp.QuoteMeta(query)))
 

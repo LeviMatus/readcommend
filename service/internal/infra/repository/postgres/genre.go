@@ -7,27 +7,32 @@ import (
 
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	sq "github.com/Masterminds/squirrel"
+	"go.uber.org/zap"
 )
 
 type genreRepository struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *zap.Logger
 }
 
 // NewGenreRepository accepts a pointer to a sql.DB type. If the pointer is nil, then an error is returned.
 // Otherwise the pointer is wrapped in an genreRepository and a pointer to it is returned.
-func NewGenreRepository(db *sql.DB) (*genreRepository, error) {
-	if db == nil {
+func NewGenreRepository(db *sql.DB, logger *zap.Logger) (*genreRepository, error) {
+	if db == nil || logger == nil {
 		return nil, ErrInvalidDependency
 	}
 
 	return &genreRepository{
-		db: db,
+		db:     db,
+		logger: logger,
 	}, nil
 }
 
 // List selects all Genres in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
 func (r *genreRepository) List(ctx context.Context) ([]entity.Genre, error) {
+	r.logger.Debug("listing genres from postgres repository")
+
 	query, _, err := sq.StatementBuilder.
 		Select("*").
 		From("genre").
@@ -56,5 +61,6 @@ func (r *genreRepository) List(ctx context.Context) ([]entity.Genre, error) {
 		return nil, err
 	}
 
+	r.logger.Debug(fmt.Sprintf("found %d genres in postgres repository", len(genres)))
 	return genres, nil
 }

@@ -6,12 +6,17 @@ import (
 	"net/http/httptest"
 	"testing"
 
+	"github.com/LeviMatus/readcommend/service/internal/driver/author/authortest"
 	"github.com/LeviMatus/readcommend/service/internal/driver/book"
-	"github.com/LeviMatus/readcommend/service/internal/driver/drivertest"
+	"github.com/LeviMatus/readcommend/service/internal/driver/book/booktest"
+	"github.com/LeviMatus/readcommend/service/internal/driver/era/eratest"
+	"github.com/LeviMatus/readcommend/service/internal/driver/genre/genretest"
+	"github.com/LeviMatus/readcommend/service/internal/driver/size/sizetest"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/LeviMatus/readcommend/service/pkg/util"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/mock"
+	"go.uber.org/zap"
 )
 
 var (
@@ -81,12 +86,12 @@ var (
 )
 
 func BenchmarkAPI_Books(b *testing.B) {
-	driver := drivertest.DriverMock{}
+	driver := booktest.DriverMock{}
 	driver.
 		On("SearchBooks", mock.MatchedBy(func(_ context.Context) bool { return true }), book.SearchInput{}).
 		Return(books, nil)
 
-	apiServer, err := New(&driver)
+	apiServer, err := New(&authortest.DriverMock{}, &sizetest.DriverMock{}, &genretest.DriverMock{}, &eratest.DriverMock{}, &driver, zap.NewNop())
 	assert.NoError(b, err)
 	assert.NotNil(b, apiServer)
 
@@ -99,12 +104,12 @@ func BenchmarkAPI_Books(b *testing.B) {
 }
 
 func BenchmarkAPI_Authors(b *testing.B) {
-	driver := drivertest.DriverMock{}
+	driver := authortest.DriverMock{}
 	driver.
 		On("ListAuthors", mock.MatchedBy(func(_ context.Context) bool { return true })).
 		Return(authors, nil)
 
-	apiServer, err := New(&driver)
+	apiServer, err := New(&driver, &sizetest.DriverMock{}, &genretest.DriverMock{}, &eratest.DriverMock{}, &booktest.DriverMock{}, zap.NewNop())
 	assert.NoError(b, err)
 	assert.NotNil(b, apiServer)
 
@@ -117,12 +122,12 @@ func BenchmarkAPI_Authors(b *testing.B) {
 }
 
 func BenchmarkAPI_Genres(b *testing.B) {
-	driver := drivertest.DriverMock{}
+	driver := genretest.DriverMock{}
 	driver.
 		On("ListGenres", mock.MatchedBy(func(_ context.Context) bool { return true })).
 		Return(genres, nil)
 
-	apiServer, err := New(&driver)
+	apiServer, err := New(&authortest.DriverMock{}, &sizetest.DriverMock{}, &driver, &eratest.DriverMock{}, &booktest.DriverMock{}, zap.NewNop())
 	assert.NoError(b, err)
 	assert.NotNil(b, apiServer)
 
@@ -135,12 +140,12 @@ func BenchmarkAPI_Genres(b *testing.B) {
 }
 
 func BenchmarkAPI_Sizes(b *testing.B) {
-	driver := drivertest.DriverMock{}
+	driver := sizetest.DriverMock{}
 	driver.
 		On("ListSizes", mock.MatchedBy(func(_ context.Context) bool { return true })).
 		Return(sizes, nil)
 
-	apiServer, err := New(&driver)
+	apiServer, err := New(&authortest.DriverMock{}, &driver, &genretest.DriverMock{}, &eratest.DriverMock{}, &booktest.DriverMock{}, zap.NewNop())
 	assert.NoError(b, err)
 	assert.NotNil(b, apiServer)
 
@@ -153,12 +158,12 @@ func BenchmarkAPI_Sizes(b *testing.B) {
 }
 
 func BenchmarkAPI_Eras(b *testing.B) {
-	driver := drivertest.DriverMock{}
+	driver := eratest.DriverMock{}
 	driver.
 		On("ListEras", mock.MatchedBy(func(_ context.Context) bool { return true })).
 		Return(eras, nil)
 
-	apiServer, err := New(&driver)
+	apiServer, err := New(&authortest.DriverMock{}, &sizetest.DriverMock{}, &genretest.DriverMock{}, &driver, &booktest.DriverMock{}, zap.NewNop())
 	assert.NoError(b, err)
 	assert.NotNil(b, apiServer)
 

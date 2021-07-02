@@ -9,27 +9,31 @@ import (
 	"github.com/LeviMatus/readcommend/service/internal/driver/book"
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	sq "github.com/Masterminds/squirrel"
+	"go.uber.org/zap"
 )
 
 type bookRepository struct {
-	db *sql.DB
+	db     *sql.DB
+	logger *zap.Logger
 }
 
 // NewBookRepository accepts a pointer to a sql.DB type. If the pointer is nil, then an error is returned.
 // Otherwise the pointer is wrapped in a bookRepository and a pointer to it is returned.
-func NewBookRepository(db *sql.DB) (*bookRepository, error) {
-	if db == nil {
+func NewBookRepository(db *sql.DB, logger *zap.Logger) (*bookRepository, error) {
+	if db == nil || logger == nil {
 		return nil, ErrInvalidDependency
 	}
 
 	return &bookRepository{
-		db: db,
+		db:     db,
+		logger: logger,
 	}, nil
 }
 
 // Search selects all Books in the repository. If the query fails or encounters an error while
 // cursing through the result set, then an error is returned.
 func (r *bookRepository) Search(ctx context.Context, params book.SearchInput) ([]entity.Book, error) {
+	r.logger.Debug("searching books from postgres repository")
 
 	/*
 	 * Start building SQL query
@@ -60,6 +64,7 @@ func (r *bookRepository) Search(ctx context.Context, params book.SearchInput) ([
 	if err != nil {
 		return nil, fmt.Errorf("unable to build SQL query: %w", err)
 	}
+	r.logger.Debug(fmt.Sprintf("search book query: %s\n search book values: %v\n", query, values))
 	/*
 	 * Finish building SQL query
 	 */
@@ -92,6 +97,8 @@ func (r *bookRepository) Search(ctx context.Context, params book.SearchInput) ([
 	if err = rows.Err(); err != nil {
 		return nil, err
 	}
+
+	r.logger.Debug(fmt.Sprintf("found %d books in postgres repository", len(books)))
 
 	return books, nil
 }

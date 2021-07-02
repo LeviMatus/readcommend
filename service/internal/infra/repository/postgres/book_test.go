@@ -11,6 +11,7 @@ import (
 	"github.com/LeviMatus/readcommend/service/internal/entity"
 	"github.com/pkg/errors"
 	"github.com/stretchr/testify/assert"
+	"go.uber.org/zap"
 )
 
 func TestNewBookRepository(t *testing.T) {
@@ -29,14 +30,14 @@ func TestNewBookRepository(t *testing.T) {
 		},
 		"successful create repository": {
 			input:        &db,
-			expect:       &bookRepository{db: &db},
+			expect:       &bookRepository{db: &db, logger: zap.NewNop()},
 			errAssertion: assert.NoError,
 		},
 	}
 
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
-			actual, err := NewBookRepository(tt.input)
+			actual, err := NewBookRepository(tt.input, zap.NewNop())
 			assert.Equal(t, tt.expect, actual)
 			tt.errAssertion(t, err)
 		})
@@ -173,7 +174,7 @@ func TestBookPostgresRepo_GetBooks(t *testing.T) {
 	for name, tt := range tests {
 		t.Run(name, func(t *testing.T) {
 			db, mock := newMock(t)
-			repo := &bookRepository{db}
+			repo := &bookRepository{db: db, logger: zap.NewNop()}
 
 			tt.setQueryExpectations(mock.ExpectQuery(regexp.QuoteMeta(tt.expectedQuery)))
 
